@@ -46,9 +46,14 @@ if "%CTK_PATH%"=="" (
     echo.
     "%PYTHON%" -m PyInstaller --onefile --windowed ^
         --name "CourseTracker" ^
+        --icon "assets\AdviseMe.ico" ^
         --add-data "programs;programs" ^
         --add-data "version.py;." ^
+        --add-data "assets;assets" ^
         --hidden-import "customtkinter" ^
+        --hidden-import "PIL" ^
+        --hidden-import "PIL.Image" ^
+        --hidden-import "PIL.ImageTk" ^
         --hidden-import "core.models" ^
         --hidden-import "core.evaluation_parser" ^
         --hidden-import "core.grid_loader" ^
@@ -64,10 +69,15 @@ if "%CTK_PATH%"=="" (
     echo Building executable...
     "%PYTHON%" -m PyInstaller --onefile --windowed ^
         --name "CourseTracker" ^
+        --icon "assets\AdviseMe.ico" ^
         --add-data "programs;programs" ^
         --add-data "version.py;." ^
+        --add-data "assets;assets" ^
         --add-data "%CTK_PATH%;customtkinter" ^
         --hidden-import "customtkinter" ^
+        --hidden-import "PIL" ^
+        --hidden-import "PIL.Image" ^
+        --hidden-import "PIL.ImageTk" ^
         --hidden-import "core.models" ^
         --hidden-import "core.evaluation_parser" ^
         --hidden-import "core.grid_loader" ^

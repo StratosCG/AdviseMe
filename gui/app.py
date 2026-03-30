@@ -12,6 +12,12 @@ from tkinter import filedialog, messagebox
 from datetime import datetime
 
 try:
+    from PIL import Image, ImageTk
+    HAS_PIL = True
+except ImportError:
+    HAS_PIL = False
+
+try:
     import customtkinter as ctk
     ctk.set_appearance_mode("light")
     ctk.set_default_color_theme("blue")
@@ -57,7 +63,9 @@ BLUE_DARK  = "#5BA3D9"
 WHITE      = "#FFFFFF"
 BG         = "#F0F4F8"       # page background
 CARD_BG    = "#FFFFFF"
-SIDEBAR_BG = "#F7F9FC"
+SIDEBAR_BG = "#E8F3FF"   # matches gradient top colour
+SIDEBAR_GRAD_TOP    = "#E8F3FF"  # soft sky blue
+SIDEBAR_GRAD_BOTTOM = "#B8CFEA"  # soft medium blue
 BORDER     = "#E2E8F0"
 TEXT_PRIMARY   = "#1A202C"
 TEXT_SECONDARY = "#718096"
@@ -76,24 +84,70 @@ PURPLE     = "#9F7AEA"
 PURPLE_BG  = "#E9D8FD"
 
 # Grid cell colors
-GRID_GREEN   = "#C6F6D5"
+GRID_GREEN    = "#C6F6D5"
 GRID_TRANSFER = "#E9D8FD"   # Purple tint for transfers
-GRID_ORANGE  = "#FEEBC8"
-GRID_RED     = "#FED7D7"
-GRID_BLUE    = "#BEE3F8"
-GRID_WHITE   = "#FFFFFF"
+GRID_ORANGE   = "#F9C96A"   # Amber — clearly distinct from red
+GRID_RED      = "#FCA5A5"   # Coral red — clearly distinct from orange
+GRID_BLUE     = "#BEE3F8"
+GRID_WHITE    = "#FFFFFF"
 
 # Fonts
-F_TITLE   = ("Segoe UI", 16, "bold")
-F_HEADING = ("Segoe UI", 12, "bold")
-F_LABEL   = ("Segoe UI", 10)
-F_BODY    = ("Segoe UI", 10)
-F_SMALL   = ("Segoe UI", 9)
-F_TINY    = ("Segoe UI", 8)
-F_GRID    = ("Segoe UI", 8)
+F_TITLE   = ("Segoe UI", 18, "bold")
+F_HEADING = ("Segoe UI", 13, "bold")
+F_LABEL   = ("Segoe UI", 11)
+F_BODY    = ("Segoe UI", 11)
+F_SMALL   = ("Segoe UI", 10)
+F_TINY    = ("Segoe UI", 10)
+F_GRID    = ("Segoe UI", 9)
 F_GRID_B  = ("Segoe UI", 8, "bold")
 F_METRIC  = ("Segoe UI", 22, "bold")
 F_METRIC_LABEL = ("Segoe UI", 9)
+
+
+def _asset_path(filename: str) -> str:
+    """Resolve path to bundled assets — works in dev and PyInstaller."""
+    base = getattr(sys, '_MEIPASS', None)
+    if base:
+        return os.path.join(base, 'assets', filename)
+    # Dev: assets/ sits next to gui/ (one level up from this file)
+    return os.path.join(
+        os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+        'assets', filename)
+
+
+def _load_tk_image(filename: str, size: tuple = None):
+    """Load an image as a Tkinter-compatible PhotoImage. Returns None on failure."""
+    if not HAS_PIL:
+        return None
+    try:
+        path = _asset_path(filename)
+        img = Image.open(path).convert('RGBA')
+        if size:
+            img = img.resize(size, Image.LANCZOS)
+        return ImageTk.PhotoImage(img)
+    except Exception:
+        return None
+
+
+def _ctk_combo(parent, **kw) -> "ctk.CTkComboBox":
+    """
+    Create a CTkComboBox with a white dropdown arrow on the navy button.
+
+    CTK uses the same `text_color` for both the entry text AND the arrow
+    fill polygon. Setting text_color=WHITE gives a white arrow, but also
+    makes the entry text invisible on a white background. After creation we
+    reach into the internal Entry widget and restore dark text there.
+    """
+    combo = ctk.CTkComboBox(parent, text_color=WHITE, **kw)
+    try:
+        combo._entry.configure(
+            fg=TEXT_PRIMARY,
+            disabledforeground=TEXT_MUTED,
+            insertbackground=TEXT_PRIMARY,
+        )
+    except Exception:
+        pass
+    return combo
 
 
 def _card(parent, **kw):
@@ -108,9 +162,9 @@ class CourseTrackerApp:
 
     def __init__(self, root):
         self.root = root
-        self.root.title("Course Tracker — Kean University")
-        self.root.geometry("1400x900")
-        self.root.minsize(1200, 800)
+        self.root.title("AdviseMe — Kean University")
+        self.root.geometry("1600x1000")
+        self.root.minsize(1400, 950)
         self.root.configure(bg=BG)
 
         # State
@@ -126,6 +180,9 @@ class CourseTrackerApp:
         self._human_gpa_var = tk.StringVar()
         self._human_credits_var = tk.StringVar()
 
+        # Set window icon (taskbar + title bar)
+        self._set_window_icon()
+
         # Build UI
         self._build_header()
         self._build_body()
@@ -135,22 +192,55 @@ class CourseTrackerApp:
         # Check for updates in background (non-blocking)
         check_for_updates(self.root, __version__)
 
+    def _set_window_icon(self):
+        """Set the window/taskbar icon from the bundled assets."""
+        try:
+            ico_path = _asset_path('AdviseMe.ico')
+            if os.path.exists(ico_path):
+                self.root.iconbitmap(ico_path)
+                return
+        except Exception:
+            pass
+        # Fallback: use PNG via iconphoto
+        img = _load_tk_image('icon_48.png')
+        if img:
+            self._icon_img = img   # keep reference so GC doesn't delete it
+            self.root.iconphoto(True, img)
+
     # ================================================================
     #  HEADER
     # ================================================================
 
     def _build_header(self):
-        hdr = tk.Frame(self.root, bg=NAVY, height=56)
+        HDR_BG = WHITE
+
+        hdr = tk.Frame(self.root, bg=HDR_BG, height=60)
         hdr.pack(fill=tk.X)
         hdr.pack_propagate(False)
 
-        # Left: branding
-        left = tk.Frame(hdr, bg=NAVY)
-        left.pack(side=tk.LEFT, padx=24, pady=8)
-        tk.Label(left, text="KEAN UNIVERSITY", font=("Segoe UI", 9, "bold"),
-                 fg=BLUE, bg=NAVY).pack(anchor=tk.W)
-        tk.Label(left, text="Course Tracker", font=("Segoe UI", 15, "bold"),
-                 fg=WHITE, bg=NAVY).pack(anchor=tk.W)
+        # Drop shadow — two thin strips below the header for a layered effect
+        tk.Frame(self.root, bg="#C8D4E0", height=2).pack(fill=tk.X)
+        tk.Frame(self.root, bg="#E2E8F0", height=2).pack(fill=tk.X)
+
+        # Left: logo + branding
+        left = tk.Frame(hdr, bg=HDR_BG)
+        left.pack(side=tk.LEFT, padx=16, pady=8)
+
+        logo_img = _load_tk_image('logo_transparent.png', size=(40, 40))
+        if logo_img:
+            self._header_logo = logo_img   # keep reference
+            tk.Label(left, image=logo_img, bg=HDR_BG).pack(side=tk.LEFT, padx=(0, 10))
+
+        text_stack = tk.Frame(left, bg=HDR_BG)
+        text_stack.pack(side=tk.LEFT)
+        tk.Label(text_stack, text="RBSD", font=("Segoe UI", 9, "bold"),
+                 fg=BLUE_DARK, bg=HDR_BG).pack(anchor=tk.W)
+        tk.Label(text_stack, text="AdviseMe", font=("Segoe UI", 15, "bold"),
+                 fg=NAVY, bg=HDR_BG).pack(anchor=tk.W)
+
+        # Thin vertical divider between branding and right controls
+        tk.Frame(hdr, bg=BORDER, width=1).pack(side=tk.LEFT, fill=tk.Y,
+                                                padx=(12, 0), pady=10)
 
         # Center-right: Reset button
         reset_btn = tk.Button(
@@ -158,20 +248,20 @@ class CourseTrackerApp:
             bg="#C53030", fg=WHITE, activebackground="#9B2C2C",
             activeforeground=WHITE, relief=tk.FLAT, padx=14, pady=6,
             cursor="hand2", bd=0, command=self._confirm_reset)
-        reset_btn.pack(side=tk.RIGHT, padx=(0, 16), pady=12)
+        reset_btn.pack(side=tk.RIGHT, padx=(0, 16), pady=14)
 
         # Right: program selector
-        right = tk.Frame(hdr, bg=NAVY)
-        right.pack(side=tk.RIGHT, padx=(16, 0), pady=10)
-        tk.Label(right, text="Program", font=F_SMALL, fg=BLUE,
-                 bg=NAVY).pack(side=tk.LEFT, padx=(0, 8))
+        right = tk.Frame(hdr, bg=HDR_BG)
+        right.pack(side=tk.RIGHT, padx=(16, 0), pady=12)
+        tk.Label(right, text="Program", font=F_SMALL, fg=TEXT_SECONDARY,
+                 bg=HDR_BG).pack(side=tk.LEFT, padx=(0, 8))
 
         self.program_var = tk.StringVar()
         if HAS_CTK:
-            self.program_combo = ctk.CTkComboBox(
+            self.program_combo = _ctk_combo(
                 right, variable=self.program_var, values=[], width=260,
                 height=30, font=F_SMALL, dropdown_font=F_SMALL,
-                fg_color=WHITE, border_color=NAVY_MID,
+                fg_color=WHITE, border_color=BORDER,
                 button_color=NAVY_LIGHT, button_hover_color=BLUE,
                 command=lambda _: self._on_program_selected(None))
         else:
@@ -190,11 +280,46 @@ class CourseTrackerApp:
         body.pack(fill=tk.BOTH, expand=True)
 
         # ── Sidebar (scrollable) ──
-        sidebar_outer = tk.Frame(body, bg=SIDEBAR_BG, width=290)
+        sidebar_outer = tk.Frame(body, bg=SIDEBAR_GRAD_TOP, width=340)
         sidebar_outer.pack(side=tk.LEFT, fill=tk.Y)
         sidebar_outer.pack_propagate(False)
 
-        sb_canvas = tk.Canvas(sidebar_outer, bg=SIDEBAR_BG, highlightthickness=0, width=274)
+        # Gradient background canvas — drawn behind all sidebar content
+        _grad_canvas = tk.Canvas(sidebar_outer, highlightthickness=0, bd=0)
+        _grad_canvas.place(x=0, y=0, relwidth=1, relheight=1)
+
+        def _draw_sidebar_gradient(event=None):
+            _grad_canvas.delete("all")
+            w = sidebar_outer.winfo_width() or 340
+            h = sidebar_outer.winfo_height() or 1000
+            r1, g1, b1 = 0xE8, 0xF3, 0xFF   # top  #E8F3FF
+            r2, g2, b2 = 0xB8, 0xCF, 0xEA   # bottom #B8CFEA
+            steps = 80
+            for i in range(steps):
+                t = i / steps
+                r = int(r1 + (r2 - r1) * t)
+                g = int(g1 + (g2 - g1) * t)
+                b = int(b1 + (b2 - b1) * t)
+                y0 = int(h * i / steps)
+                y1 = int(h * (i + 1) / steps) + 1
+                _grad_canvas.create_rectangle(
+                    0, y0, w, y1,
+                    fill=f"#{r:02x}{g:02x}{b:02x}", outline="")
+            _grad_canvas.lower()   # keep gradient behind all packed widgets
+
+        sidebar_outer.bind("<Configure>", lambda e: _draw_sidebar_gradient())
+        sidebar_outer.after(150, _draw_sidebar_gradient)
+
+        # ── Fixed Export footer (always visible at bottom) ──
+        export_footer = tk.Frame(sidebar_outer, bg=SIDEBAR_GRAD_BOTTOM, padx=16, pady=10)
+        export_footer.pack(side=tk.BOTTOM, fill=tk.X)
+        tk.Frame(export_footer, bg="#9CB8D8", height=1).pack(fill=tk.X, pady=(0, 8))
+        self._make_button(export_footer, "Export Grid PDF", NAVY, WHITE,
+                          self._export_grid_pdf, h=34, pady=(0, 4))
+        self._make_button(export_footer, "Export Plan PDF", CARD_BG, TEXT_PRIMARY,
+                          self._export_plan_pdf, h=34, border=True, pady=(0, 0))
+
+        sb_canvas = tk.Canvas(sidebar_outer, bg=SIDEBAR_GRAD_TOP, highlightthickness=0, width=324)
         sb_scroll = tk.Scrollbar(sidebar_outer, orient=tk.VERTICAL, command=sb_canvas.yview)
         sb_canvas.configure(yscrollcommand=sb_scroll.set)
         sb_scroll.pack(side=tk.RIGHT, fill=tk.Y)
@@ -204,6 +329,20 @@ class CourseTrackerApp:
         sb_canvas.create_window((0, 0), window=self._sb, anchor="nw")
         self._sb.bind("<Configure>",
                       lambda e: sb_canvas.configure(scrollregion=sb_canvas.bbox("all")))
+
+        # Enable mousewheel scrolling on the sidebar
+        def _on_sidebar_scroll(event):
+            sb_canvas.yview_scroll(int(-1 * (event.delta / 120)), "units")
+
+        def _bind_mousewheel(widget):
+            widget.bind("<MouseWheel>", _on_sidebar_scroll)
+            for child in widget.winfo_children():
+                _bind_mousewheel(child)
+
+        sb_canvas.bind("<MouseWheel>", _on_sidebar_scroll)
+        self._sb.bind("<MouseWheel>", _on_sidebar_scroll)
+        # Re-bind after sidebar is built so all child widgets are covered
+        self.root.after(200, lambda: _bind_mousewheel(self._sb))
 
         self._build_sidebar(self._sb)
 
@@ -241,7 +380,7 @@ class CourseTrackerApp:
         self._sidebar_label(sb, "FACULTY ADVISOR")
         self.advisor_var = tk.StringVar(value="")
         if HAS_CTK:
-            self.advisor_combo = ctk.CTkComboBox(
+            self.advisor_combo = _ctk_combo(
                 sb, variable=self.advisor_var,
                 values=["Select advisor..."], width=250, height=28,
                 font=F_TINY, dropdown_font=F_TINY,
@@ -262,7 +401,7 @@ class CourseTrackerApp:
 
         self.semester_var = tk.StringVar()
         if HAS_CTK:
-            self.semester_combo = ctk.CTkComboBox(
+            self.semester_combo = _ctk_combo(
                 sb, variable=self.semester_var,
                 values=get_available_semesters(), width=250, height=28,
                 font=F_TINY, dropdown_font=F_TINY,
@@ -276,29 +415,63 @@ class CourseTrackerApp:
         self.semester_combo.pack(fill=tk.X, pady=(2, 8))
 
         tk.Label(sb, text="Strategy", font=F_TINY, fg=TEXT_SECONDARY,
-                 bg=SIDEBAR_BG, anchor=tk.W).pack(fill=tk.X, pady=(0, 2))
+                 bg=SIDEBAR_BG, anchor=tk.W).pack(fill=tk.X, pady=(0, 6))
 
-        self.strategy_var = tk.StringVar(value=STRATEGY_CAP_18)
-        for val, label in [
-            (STRATEGY_CAP_18, "Cap at 18 credits"),
-            (STRATEGY_ADVISOR_PICKS, "Advisor picks courses"),
-            (STRATEGY_SWAP, "Swap on-track for missed"),
-            (STRATEGY_MANUAL, "Use manual edits"),
-        ]:
-            rb = tk.Radiobutton(sb, text=label, variable=self.strategy_var,
-                                value=val, font=F_TINY, bg=SIDEBAR_BG,
-                                fg=TEXT_PRIMARY, anchor=tk.W,
-                                activebackground=SIDEBAR_BG, selectcolor=SIDEBAR_BG)
-            rb.pack(fill=tk.X, padx=(8, 0), pady=0)
+        self.strategy_var = tk.StringVar(value=STRATEGY_ADVISOR_PICKS)
+        _strategies = [
+            (STRATEGY_ADVISOR_PICKS, "Advisor Picks",  "Manually choose courses for the semester"),
+            (STRATEGY_MANUAL,        "Manual Edits",   "Use your own manual course edits"),
+        ]
+        self._strategy_cards = {}
+        cards_frame = tk.Frame(sb, bg=SIDEBAR_BG)
+        cards_frame.pack(fill=tk.X, pady=(0, 8))
+        cards_frame.columnconfigure(0, weight=1)
+        cards_frame.columnconfigure(1, weight=1)
+
+        def _select_strategy(val):
+            self.strategy_var.set(val)
+            for v, widgets in self._strategy_cards.items():
+                card, inner, title_lbl, desc_lbl = widgets
+                if v == val:
+                    card.config(bg=NAVY, highlightbackground=NAVY)
+                    inner.config(bg=NAVY)
+                    title_lbl.config(bg=NAVY, fg=WHITE)
+                    desc_lbl.config(bg=NAVY, fg="#A0AEC0")
+                else:
+                    card.config(bg=CARD_BG, highlightbackground=BORDER)
+                    inner.config(bg=CARD_BG)
+                    title_lbl.config(bg=CARD_BG, fg=TEXT_PRIMARY)
+                    desc_lbl.config(bg=CARD_BG, fg=TEXT_SECONDARY)
+
+        for i, (val, title, desc) in enumerate(_strategies):
+            row, col = divmod(i, 2)
+            card = tk.Frame(cards_frame, bg=CARD_BG,
+                            highlightbackground=BORDER, highlightthickness=1,
+                            cursor="hand2")
+            card.grid(row=row, column=col, padx=(0 if col == 0 else 4, 0), pady=3, sticky="nsew")
+            inner = tk.Frame(card, bg=CARD_BG, padx=8, pady=7, cursor="hand2")
+            inner.pack(fill=tk.BOTH, expand=True)
+            title_lbl = tk.Label(inner, text=title, font=("Segoe UI", 9, "bold"),
+                                 bg=CARD_BG, fg=TEXT_PRIMARY,
+                                 anchor=tk.W, cursor="hand2",
+                                 wraplength=120, justify=tk.LEFT)
+            title_lbl.pack(fill=tk.X)
+            desc_lbl = tk.Label(inner, text=desc, font=("Segoe UI", 8),
+                                bg=CARD_BG, fg=TEXT_SECONDARY,
+                                anchor=tk.W, wraplength=120,
+                                justify=tk.LEFT, cursor="hand2")
+            desc_lbl.pack(fill=tk.X, pady=(2, 0))
+            self._strategy_cards[val] = (card, inner, title_lbl, desc_lbl)
+            for w in (card, inner, title_lbl, desc_lbl):
+                w.bind("<Button-1>", lambda e, v=val: _select_strategy(v))
+
+        _select_strategy(STRATEGY_ADVISOR_PICKS)
 
         self._make_button(sb, "Generate Plan", BLUE_DARK, WHITE,
                           self._generate_plan, h=36, pady=(8, 4))
 
         # ── Human Mode ──
         self._sidebar_label(sb, "HUMAN MODE")
-        tk.Label(sb, text="Click grid cells to manually set status",
-                 font=F_TINY, fg=TEXT_SECONDARY, bg=SIDEBAR_BG,
-                 anchor=tk.W, wraplength=240).pack(fill=tk.X, pady=(0, 4))
 
         self.manual_mode_var = tk.BooleanVar(value=False)
         if HAS_CTK:
@@ -314,26 +487,43 @@ class CourseTrackerApp:
                 command=self._on_manual_mode_toggle)
         self.manual_toggle.pack(fill=tk.X, pady=(0, 6))
 
+        # ── Manual mode options (hidden until toggle is on) ──
+        self._manual_options_frame = tk.Frame(sb, bg=SIDEBAR_BG)
+        # (shown/hidden by toggle — NOT packed yet)
+
+        tk.Label(self._manual_options_frame,
+                 text="Click grid cells to set course status",
+                 font=F_TINY, fg=TEXT_SECONDARY, bg=SIDEBAR_BG,
+                 anchor=tk.W, wraplength=280).pack(fill=tk.X, pady=(0, 6))
+
         # Color picker
         self.manual_color_var = tk.StringVar(value="green")
-        color_frame = tk.Frame(sb, bg=SIDEBAR_BG)
+        color_frame = tk.Frame(self._manual_options_frame, bg=SIDEBAR_BG)
         color_frame.pack(fill=tk.X, pady=(0, 4))
-        for val, lbl, clr in [
-            ("green", "Completed", GREEN),
-            ("transfer", "Transfer", PURPLE),
-            ("orange", "Next Sem.", ORANGE),
-            ("light_red", "Gap", RED),
-            ("none", "Not Started", GRAY_LIGHT),
-            ("in_progress", "In Progress", BLUE_STATUS),
+        for val, lbl, clr, dot_clr in [
+            ("green",      "Completed",   GRID_GREEN,    GREEN),
+            ("transfer",   "Transfer",    GRID_TRANSFER, PURPLE),
+            ("orange",     "Next Sem.",   GRID_ORANGE,   ORANGE),
+            ("light_red",  "Gap",         GRID_RED,      RED),
+            ("none",       "Not Started", GRID_WHITE,    GRAY_LIGHT),
+            ("in_progress","In Progress", GRID_BLUE,     BLUE_STATUS),
         ]:
             rf = tk.Frame(color_frame, bg=SIDEBAR_BG)
-            rf.pack(fill=tk.X, pady=1)
-            tk.Radiobutton(rf, text=lbl, variable=self.manual_color_var,
-                           value=val, font=F_TINY, bg=SIDEBAR_BG,
-                           fg=TEXT_PRIMARY, anchor=tk.W,
-                           activebackground=SIDEBAR_BG,
-                           selectcolor=SIDEBAR_BG).pack(side=tk.LEFT)
-            tk.Frame(rf, bg=clr, width=18, height=12,
+            rf.pack(fill=tk.X, pady=2)
+            if HAS_CTK:
+                ctk.CTkRadioButton(
+                    rf, text=lbl, variable=self.manual_color_var, value=val,
+                    font=F_TINY, fg_color=dot_clr, hover_color=dot_clr,
+                    border_color=BORDER, radiobutton_width=16, radiobutton_height=16
+                ).pack(side=tk.LEFT)
+            else:
+                tk.Radiobutton(rf, text=lbl, variable=self.manual_color_var,
+                               value=val, font=F_TINY, bg=SIDEBAR_BG,
+                               fg=TEXT_PRIMARY, anchor=tk.W,
+                               activebackground=SIDEBAR_BG,
+                               selectcolor=SIDEBAR_BG).pack(side=tk.LEFT)
+            # Swatch shows the actual grid cell color
+            tk.Frame(rf, bg=clr, width=28, height=14,
                      highlightbackground=BORDER,
                      highlightthickness=1).pack(side=tk.RIGHT, padx=4)
 
@@ -358,12 +548,6 @@ class CourseTrackerApp:
                                  font=F_TINY, relief=tk.SOLID, bd=1)
             entry.pack(fill=tk.X, pady=(1, 6))
 
-        # ── Export ──
-        self._sidebar_label(sb, "EXPORT")
-        self._make_button(sb, "Export Grid PDF", CARD_BG, TEXT_PRIMARY,
-                          self._export_grid_pdf, h=30, border=True)
-        self._make_button(sb, "Export Plan PDF", CARD_BG, TEXT_PRIMARY,
-                          self._export_plan_pdf, h=30, border=True, pady=(4, 2))
 
     # ================================================================
     #  CONTENT AREA (tabs)
@@ -463,7 +647,7 @@ class CourseTrackerApp:
     def _sidebar_label(self, parent, text):
         f = tk.Frame(parent, bg=parent.cget("bg"))
         f.pack(fill=tk.X, pady=(12, 3))
-        tk.Label(f, text=text, font=("Segoe UI", 8, "bold"), fg=TEXT_MUTED,
+        tk.Label(f, text=text, font=("Segoe UI", 10, "bold"), fg=TEXT_MUTED,
                  bg=parent.cget("bg"), anchor=tk.W).pack(fill=tk.X)
         tk.Frame(f, bg=BORDER, height=1).pack(fill=tk.X, pady=(2, 0))
 
@@ -539,9 +723,29 @@ class CourseTrackerApp:
         # Reset UI labels and inputs
         self.eval_label.config(text="No file loaded", fg=TEXT_MUTED)
         self.advisor_var.set("")
+
+        # Reset manual mode toggle and hide options
         self.manual_mode_var.set(False)
+        if hasattr(self, '_manual_options_frame'):
+            self._manual_options_frame.pack_forget()
         if hasattr(self, '_human_info_frame'):
             self._human_info_frame.pack_forget()
+
+        # Reset strategy to default (Advisor Picks)
+        self.strategy_var.set(STRATEGY_ADVISOR_PICKS)
+        if hasattr(self, '_strategy_cards'):
+            for v, widgets in self._strategy_cards.items():
+                card, inner, title_lbl, desc_lbl = widgets
+                if v == STRATEGY_ADVISOR_PICKS:
+                    card.config(bg=NAVY, highlightbackground=NAVY)
+                    inner.config(bg=NAVY)
+                    title_lbl.config(bg=NAVY, fg=WHITE)
+                    desc_lbl.config(bg=NAVY, fg="#A0AEC0")
+                else:
+                    card.config(bg=CARD_BG, highlightbackground=BORDER)
+                    inner.config(bg=CARD_BG)
+                    title_lbl.config(bg=CARD_BG, fg=TEXT_PRIMARY)
+                    desc_lbl.config(bg=CARD_BG, fg=TEXT_SECONDARY)
 
         # Clear Human Mode inputs
         for attr in ('_human_name_var', '_human_id_var',
@@ -549,9 +753,10 @@ class CourseTrackerApp:
             if hasattr(self, attr):
                 getattr(self, attr).set("")
 
-        # Refresh grid display and stats
+        # Refresh all tabs
         if self.grid:
             self._display_grid()
+        self._display_plan()
         self._update_stats()
         self.status_var.set("Session reset.")
 
@@ -633,7 +838,17 @@ class CourseTrackerApp:
         self.info_text.delete("1.0", tk.END)
         if self.record:
             transfers = get_transfer_courses(self.record)
-            te_credits = sum(ec.credits for ec in transfers)
+            # Use grid course credits (from program JSON) when available — more
+            # accurate than EvalCourse.credits which always defaults to 3.
+            if self.grid:
+                te_credits = sum(
+                    gc.credits
+                    for sem in self.grid.semesters
+                    for gc in sem.courses
+                    if gc.status == GridHighlight.TRANSFER
+                )
+            else:
+                te_credits = sum(ec.credits for ec in transfers)
             lines = [
                 f"Name:      {self.record.student_name}",
                 f"ID:        {self.record.student_id}",
@@ -664,13 +879,43 @@ class CourseTrackerApp:
 
     def _on_manual_mode_toggle(self):
         if self.manual_mode_var.get():
-            self._human_info_frame.pack(fill=tk.X, after=self.manual_toggle.master
-                                        if hasattr(self.manual_toggle, 'master')
-                                        else self._sb)
+            self._manual_options_frame.pack(fill=tk.X, in_=self._sb)
+            self._human_info_frame.pack(fill=tk.X, in_=self._sb)
+            # Auto-select Manual Edits strategy and update the cards
+            self.strategy_var.set(STRATEGY_MANUAL)
+            if hasattr(self, '_strategy_cards'):
+                for v, widgets in self._strategy_cards.items():
+                    card, inner, title_lbl, desc_lbl = widgets
+                    if v == STRATEGY_MANUAL:
+                        card.config(bg=NAVY, highlightbackground=NAVY)
+                        inner.config(bg=NAVY)
+                        title_lbl.config(bg=NAVY, fg=WHITE)
+                        desc_lbl.config(bg=NAVY, fg="#A0AEC0")
+                    else:
+                        card.config(bg=CARD_BG, highlightbackground=BORDER)
+                        inner.config(bg=CARD_BG)
+                        title_lbl.config(bg=CARD_BG, fg=TEXT_PRIMARY)
+                        desc_lbl.config(bg=CARD_BG, fg=TEXT_SECONDARY)
             self.status_var.set(
                 "Human Mode ON — Click any course cell to set its status.")
         else:
+            self._manual_options_frame.pack_forget()
             self._human_info_frame.pack_forget()
+            # Revert strategy card back to Advisor Picks when Human Mode is off
+            self.strategy_var.set(STRATEGY_ADVISOR_PICKS)
+            if hasattr(self, '_strategy_cards'):
+                for v, widgets in self._strategy_cards.items():
+                    card, inner, title_lbl, desc_lbl = widgets
+                    if v == STRATEGY_ADVISOR_PICKS:
+                        card.config(bg=NAVY, highlightbackground=NAVY)
+                        inner.config(bg=NAVY)
+                        title_lbl.config(bg=NAVY, fg=WHITE)
+                        desc_lbl.config(bg=NAVY, fg="#A0AEC0")
+                    else:
+                        card.config(bg=CARD_BG, highlightbackground=BORDER)
+                        inner.config(bg=CARD_BG)
+                        title_lbl.config(bg=CARD_BG, fg=TEXT_PRIMARY)
+                        desc_lbl.config(bg=CARD_BG, fg=TEXT_SECONDARY)
             self.status_var.set("Human Mode OFF.")
         if self.grid:
             self._display_grid()
@@ -719,16 +964,40 @@ class CourseTrackerApp:
                      font=F_GRID_B, padx=6, pady=5).grid(
                          row=0, column=col, sticky="nsew")
 
+        # Alternating year colors: odd = dark navy, even = medium steel blue
+        YEAR_COLORS = {1: "#1E3A5F", 2: "#2E6DA4", 3: "#1E3A5F", 4: "#2E6DA4"}
+
         row = 1
         cur_year = None
+        semesters_by_year = {}
         for sem in self.grid.semesters:
-            ytxt = f"Year {sem.year}" if sem.year != cur_year else ""
-            cur_year = sem.year
+            semesters_by_year.setdefault(sem.year, []).append(sem)
 
-            for col, txt in enumerate([ytxt, sem.term]):
-                tk.Label(self.grid_inner_frame, text=txt, bg=NAVY_LIGHT,
-                         fg=WHITE, font=F_GRID_B, padx=6,
-                         pady=5).grid(row=row, column=col, sticky="nsew")
+        for sem in self.grid.semesters:
+            year_color = YEAR_COLORS.get(sem.year, NAVY_LIGHT)
+            is_first_sem = sem.year != cur_year
+
+            # Year separator row between years
+            if is_first_sem and cur_year is not None:
+                total_cols = max_c + 3
+                sep = tk.Frame(self.grid_inner_frame, bg="#C8D8E8", height=4)
+                sep.grid(row=row, column=0, columnspan=total_cols, sticky="nsew")
+                self.grid_inner_frame.rowconfigure(row, minsize=4)
+                row += 1
+
+            # Year label — spans 2 rows (Fall + Spring) only on first semester
+            if is_first_sem:
+                year_sems = semesters_by_year.get(sem.year, [])
+                span = len(year_sems)
+                tk.Label(self.grid_inner_frame, text=f"Year {sem.year}",
+                         bg=year_color, fg=WHITE, font=F_GRID_B, padx=6, pady=5
+                         ).grid(row=row, column=0, rowspan=span, sticky="nsew")
+                cur_year = sem.year
+
+            # Term label
+            tk.Label(self.grid_inner_frame, text=sem.term,
+                     bg=year_color, fg=WHITE, font=F_GRID_B, padx=6, pady=5
+                     ).grid(row=row, column=1, sticky="nsew")
 
             for col, course in enumerate(sem.courses):
                 bg = self._cell_color(course)
@@ -737,7 +1006,7 @@ class CourseTrackerApp:
                 else:
                     txt = f"{course.code}\n{course.name}\n({course.credits} cr)"
                 if course.matched_eval_course and course.matched_eval_course.grade:
-                    txt += f"\n[{course.matched_eval_course.grade}]"
+                    txt += f"\nGrade: {course.matched_eval_course.grade}"
 
                 cursor = "hand2" if self.manual_mode_var.get() else ""
                 lbl = tk.Label(self.grid_inner_frame, text=txt, bg=bg,
@@ -756,7 +1025,7 @@ class CourseTrackerApp:
                              row=row, column=col + 2, sticky="nsew")
 
             cr = sum(c.credits for c in sem.courses)
-            tk.Label(self.grid_inner_frame, text=str(cr), bg=NAVY_LIGHT,
+            tk.Label(self.grid_inner_frame, text=str(cr), bg=year_color,
                      fg=WHITE, font=F_GRID_B, padx=6, pady=5).grid(
                          row=row, column=max_c + 2, sticky="nsew")
             row += 1
@@ -791,6 +1060,23 @@ class CourseTrackerApp:
     #  PLAN GENERATION
     # ================================================================
 
+    def _clear_plan_highlights(self):
+        """
+        Reset all plan-generated highlights (orange, gap red) back to NONE
+        before regenerating a plan. Permanent statuses (green, transfer,
+        in-progress) are left untouched.
+        """
+        if not self.grid:
+            return
+        _PERMANENT = {GridHighlight.GREEN, GridHighlight.TRANSFER}
+        _PLAN_SET   = {GridHighlight.ORANGE, GridHighlight.LIGHT_RED}
+        for sem in self.grid.semesters:
+            for course in sem.courses:
+                if (course.status in _PLAN_SET
+                        and course.status not in _PERMANENT
+                        and course.eval_status != CourseStatus.IN_PROGRESS):
+                    course.status = GridHighlight.NONE
+
     def _generate_plan(self):
         if not self.grid:
             messagebox.showwarning("Warning", "Please select a program first.")
@@ -811,9 +1097,11 @@ class CourseTrackerApp:
                 semester_idx = detect_current_semester(self.grid, credits)
 
             if strategy == STRATEGY_ADVISOR_PICKS:
+                self._clear_plan_highlights()
                 self._show_advisor_pick_dialog(semester_idx, semester_label)
                 return
 
+            self._clear_plan_highlights()
             self.plan = generate_plan(self.grid, semester_idx, semester_label,
                                       strategy)
             self._display_grid()
@@ -867,15 +1155,26 @@ class CourseTrackerApp:
         check_vars = {}
         key_map = {}
 
+        # Collect courses already manually marked orange OR red in human mode
+        # so they arrive pre-checked in the dialog
+        human_orange = set()
+        if self.manual_mode_var.get():
+            for sem in self.grid.semesters:
+                for c in sem.courses:
+                    if c.status in (GridHighlight.ORANGE, GridHighlight.LIGHT_RED):
+                        human_orange.add(c.code)
+
         def update_count(*_):
             total = sum(cr for k, (v, cr) in check_vars.items() if v.get())
             color = GREEN if total <= 18 else RED
             credit_var.set(f"Selected: {total} credits" +
-                           (" — over 18!" if total > 18 else ""))
+                           (" ⚠ Over 18 credits!" if total > 18 else ""))
             counter_lbl.configure(fg=color)
 
         def add_cb(parent, text, key, code, credits, checked, accent):
-            var = tk.BooleanVar(value=checked)
+            # Pre-check if human mode already marked this course orange
+            is_checked = checked or (code in human_orange)
+            var = tk.BooleanVar(value=is_checked)
             var.trace_add("write", update_count)
             check_vars[key] = (var, credits)
             key_map[key] = code
@@ -911,14 +1210,28 @@ class CourseTrackerApp:
         shown = {c.code for c in scheduled} | {c.code for _, c in gaps}
         other = [(sl, c) for sl, c in get_all_remaining_grid_courses(self.grid)
                  if c.code not in shown]
-        if other:
+
+        # If in human mode, show human-orange courses at top of "other" section
+        human_only = [(sl, c) for sl, c in other if c.code in human_orange]
+        non_human  = [(sl, c) for sl, c in other if c.code not in human_orange]
+
+        if human_only:
+            tk.Label(inner, text="Your Human Mode Selections",
+                     font=("Segoe UI", 10, "bold"), fg=ORANGE,
+                     bg=BG).pack(anchor=tk.W, pady=(12, 4))
+            for sl, c in human_only:
+                add_cb(inner,
+                       f"{c.code} — {c.name} ({c.credits} cr) [{sl}]",
+                       f"h_{c.code}_{sl}", c.code, c.credits, True, ORANGE)
+
+        if non_human:
             tk.Label(inner, text="All Other Remaining Courses",
                      font=("Segoe UI", 10, "bold"), fg=TEXT_MUTED,
                      bg=BG).pack(anchor=tk.W, pady=(12, 2))
             tk.Label(inner, text="Select any for special scheduling needs",
                      font=F_TINY, fg=TEXT_MUTED, bg=BG).pack(
                          anchor=tk.W, padx=12, pady=(0, 4))
-            for sl, c in other:
+            for sl, c in non_human:
                 add_cb(inner,
                        f"{c.code} — {c.name} ({c.credits} cr) [{sl}]",
                        f"o_{c.code}_{sl}", c.code, c.credits, False, GRAY)
@@ -926,14 +1239,42 @@ class CourseTrackerApp:
         update_count()
 
         def confirm():
-            sel = [key_map[k] for k, (v, _) in check_vars.items() if v.get()]
-            self.plan = generate_plan(self.grid, semester_idx, semester_label,
-                                      STRATEGY_ADVISOR_PICKS, sel)
+            sel_codes = set(key_map[k] for k, (v, _) in check_vars.items() if v.get())
+
+            # Destroy dialog first so the main window can repaint freely
+            dialog.destroy()
+
+            # Clear old plan highlights before applying new ones
+            self._clear_plan_highlights()
+
+            # Build the plan directly from the full grid so courses from
+            # ANY section (scheduled, gaps, or "other") are included.
+            # This avoids the bug where _plan_advisor_picks only searched
+            # scheduled/gap lists and silently dropped "other" selections.
+            from core.models import SemesterPlan
+            new_plan = SemesterPlan(semester_label=semester_label)
+            for sem in self.grid.semesters:
+                for course in sem.courses:
+                    if course.code in sel_codes:
+                        from core.models import GridHighlight, CourseStatus
+                        if course.eval_status != CourseStatus.IN_PROGRESS:
+                            course.status = GridHighlight.ORANGE
+                        new_plan.courses.append(course)
+
+            # Warn if over 18 credits
+            total = sum(c.credits for c in new_plan.courses)
+            if total > 18:
+                new_plan.notes.append(
+                    f"⚠ Total selected credits ({total}) exceeds 18. "
+                    "Consider reducing the course load.")
+
+            new_plan.compute_total()
+            self.plan = new_plan
+
             self._display_grid()
             self._update_stats()
             self._display_plan()
             self._switch_tab("plan")
-            dialog.destroy()
             self.status_var.set(f"Plan generated: {self.plan.total_credits} credits")
 
         bf = tk.Frame(dialog, bg=BG)

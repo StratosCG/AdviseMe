@@ -29,23 +29,24 @@ def auto_detect_semester_label(credits_earned: int) -> str:
     """
     Guess the upcoming semester based on current date and credits.
 
-    Returns a label like "Fall 2026" or "Spring 2027".
+    Returns a label like "Fall 2026", "Spring 2027", or "Summer 2026".
+
+    Academic calendar heuristic:
+      Jan–Apr  → currently in Spring  → next is Summer (same year)
+      May–Jul  → currently in Summer  → next is Fall   (same year)
+      Aug–Dec  → currently in Fall    → next is Spring (next year)
     """
     now = datetime.now()
     month = now.month
 
-    # Academic calendar heuristic:
-    # Jan-May = currently in Spring, next is Summer or Fall
-    # Jun-Aug = currently in Summer, next is Fall
-    # Sep-Dec = currently in Fall, next is Spring
-    if month <= 5:
-        # Currently Spring, next is Fall (same year)
-        return f"Fall {now.year}"
-    elif month <= 8:
-        # Currently Summer, next is Fall (same year)
+    if month <= 4:
+        # Spring semester → next is Summer
+        return f"Summer {now.year}"
+    elif month <= 7:
+        # Summer → next is Fall
         return f"Fall {now.year}"
     else:
-        # Currently Fall, next is Spring (next year)
+        # Fall → next is Spring of next year
         return f"Spring {now.year + 1}"
 
 
@@ -289,15 +290,43 @@ def get_available_semesters(current_year: int = None) -> list:
     """
     Get a list of upcoming semester labels for the dropdown.
 
+    Starts from the NEXT upcoming semester (not one already in progress)
+    and returns about 2–3 years of options.
+
     Returns labels like ["Fall 2026", "Spring 2027", "Summer 2027", ...].
     """
+    now = datetime.now()
     if current_year is None:
-        current_year = datetime.now().year
+        current_year = now.year
 
+    month = now.month
+
+    # Determine the first upcoming semester (not currently in progress)
+    # Jan–Apr → Summer is next  (Spring is current)
+    # May–Jul → Fall is next    (Summer is current)
+    # Aug–Dec → Spring is next  (Fall is current)
+    if month <= 4:
+        # Start from Summer of the current year
+        start = ("Summer", current_year)
+    elif month <= 7:
+        # Start from Fall of the current year
+        start = ("Fall", current_year)
+    else:
+        # Start from Spring of the next year
+        start = ("Spring", current_year + 1)
+
+    term_order = ["Spring", "Summer", "Fall"]
     semesters = []
-    for year in range(current_year, current_year + 3):
-        semesters.append(f"Spring {year}")
-        semesters.append(f"Summer {year}")
-        semesters.append(f"Fall {year}")
+
+    # Generate the next ~2.5 years of semesters starting from start
+    term, year = start
+    for _ in range(8):  # 8 entries ≈ 2.67 years
+        semesters.append(f"{term} {year}")
+        idx = term_order.index(term)
+        if idx + 1 < len(term_order):
+            term = term_order[idx + 1]
+        else:
+            term = term_order[0]
+            year += 1
 
     return semesters

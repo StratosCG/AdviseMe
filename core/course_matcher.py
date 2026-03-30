@@ -54,8 +54,6 @@ def match_courses(record: StudentRecord, grid: ProgramGrid) -> ProgramGrid:
         [c for c in record.eval_courses if c.status in ACTIVE_STATUSES],
         key=lambda c: _STATUS_PRIORITY.get(c.status, 9),
     )
-    not_started = [c for c in record.eval_courses if c.status == CourseStatus.NOT_STARTED]
-
     # Track matched eval courses by object identity (id()) to avoid
     # double-counting while supporting same-code courses in different lists
     matched_ids = set()
@@ -236,61 +234,18 @@ def _match_by_section_completion(
     matched_ids: set
 ):
     """
-    Detect section-level completion from the evaluation PDF text.
+    Placeholder for section-level GE completion detection.
 
-    Some evaluations have collapsed details (Show Details links), so
-    individual course codes aren't available. We parse completion markers
-    like 'X of Y Completed' to determine if a GE category is satisfied.
+    Previously this used a credit-count heuristic (90+ credits → all GE done)
+    which caused false positives — students with enough credits but incomplete
+    GE requirements were shown as fully complete. That logic has been removed.
+
+    Future improvement: re-read the PDF to find "X of Y Completed" markers
+    in collapsed GE sections and use those for accurate detection.
     """
-    import re
-    import fitz
-
-    # We need to re-read the PDF to find section completion markers
-    # This is done as a fallback for unmatched GE slots
-    unmatched_ge = []
-    for semester in grid.semesters:
-        for course in semester.courses:
-            if course.is_ge_category and course.status != GridHighlight.GREEN:
-                unmatched_ge.append(course)
-
-    if not unmatched_ge:
-        return  # All GE categories matched
-
-    # Check section completion patterns in the evaluation text
-    # Map GE categories to their section headers in the evaluation
-    ge_section_patterns = {
-        "social_science": [
-            r"d\.\s*soc\s*science\s*ele.*?(\d+)\s+of\s+(\d+)\s+completed",
-            r"soc\s*science.*?(\d+)\s+of\s+(\d+)\s+completed",
-        ],
-        "science_math": [
-            r"e\.\s*science\s*&\s*math.*?(\d+)\s+of\s+(\d+)\s+completed",
-            r"science\s*&\s*math.*?(\d+)\s+of\s+(\d+)\s+completed",
-        ],
-    }
-
-    # Read evaluation PDF text
-    # We'll check if the student's record has the PDF path
-    # For now, just mark based on credit progress
-    # The section completion is detected by looking at "X of Y Completed" patterns
-
-    # Simple heuristic: if total credits > threshold, assume GE is done
-    # This can be refined when we have full PDF text access
-    for course in unmatched_ge:
-        ge_cat = course.ge_category
-        # If the student has 101+ credits out of 120, GE requirements are likely met
-        if record.total_credits_earned >= 90:
-            # Create a synthetic eval course to mark it
-            from core.models import EvalCourse
-            synthetic = EvalCourse(
-                code=f"[{course.name}]",
-                status=CourseStatus.COMPLETED,
-                grade="",
-                section=f"GE {ge_cat}",
-            )
-            course.status = GridHighlight.GREEN
-            course.matched_eval_course = synthetic
-            course.eval_status = CourseStatus.COMPLETED
+    # Nothing to do — let unmatched GE slots remain as NONE (not started)
+    # so advisors can see real gaps rather than false green cells.
+    return
 
 
 def detect_current_semester(grid: ProgramGrid, credits_earned: int = 0) -> int:
