@@ -1,0 +1,303 @@
+"""
+Semester planner with out-of-sequence course handling.
+
+Determines the next semester's course plan, identifies gaps,
+and provides options for handling credit overload when a student
+is behind schedule.
+"""
+from datetime import datetime
+from typing import Optional
+
+from core.models import (
+    ProgramGrid, SemesterPlan, GridCourse, GridHighlight, CourseStatus
+)
+from core.course_matcher import (
+    detect_current_semester, find_gap_courses, get_next_semester_courses
+)
+
+
+# Strategy options for handling out-of-sequence courses
+STRATEGY_CAP_18 = "cap_18"
+STRATEGY_ADVISOR_PICKS = "advisor_picks"
+STRATEGY_SWAP = "swap"
+STRATEGY_MANUAL = "manual"
+
+MAX_CREDITS_CAP = 18
+
+
+def auto_detect_semester_label(credits_earned: int) -> str:
+    """
+    Guess the upcoming semester based on current date and credits.
+
+    Returns a label like "Fall 2026" or "Spring 2027".
+    """
+    now = datetime.now()
+    month = now.month
+
+    # Academic calendar heuristic:
+    # Jan-May = currently in Spring, next is Summer or Fall
+    # Jun-Aug = currently in Summer, next is Fall
+    # Sep-Dec = currently in Fall, next is Spring
+    if month <= 5:
+        # Currently Spring, next is Fall (same year)
+        return f"Fall {now.year}"
+    elif month <= 8:
+        # Currently Summer, next is Fall (same year)
+        return f"Fall {now.year}"
+    else:
+        # Currently Fall, next is Spring (next year)
+        return f"Spring {now.year + 1}"
+
+
+def auto_detect_semester_index(grid: ProgramGrid, credits_earned: int = 0) -> int:
+    """
+    Detect which semester index the student should be planning for next.
+    """
+    return detect_current_semester(grid, credits_earned)
+
+
+def generate_plan(
+    grid: ProgramGrid,
+    semester_idx: int,
+    semester_label: str,
+    strategy: str = STRATEGY_CAP_18,
+    advisor_selected_courses: list = None,
+) -> SemesterPlan:
+    """
+    Generate a next-semester course plan.
+
+    Args:
+        grid: Program grid with course statuses filled in.
+        semester_idx: Index of the semester to plan for.
+        semester_label: Human-readable label (e.g., "Fall 2026").
+        strategy: How to handle out-of-sequence courses.
+        advisor_selected_courses: If strategy is advisor_picks, the courses
+                                   the advisor chose to include.
+
+    Returns:
+        SemesterPlan with scheduled and makeup courses.
+    """
+    plan = SemesterPlan(semester_label=semester_label)
+
+    # Get the courses normally scheduled for this semester
+    scheduled = get_next_semester_courses(grid, semester_idx)
+
+    # Find gap courses from earlier semesters
+    gaps = find_gap_courses(grid, semester_idx)
+    gap_courses = [course for (_, course) in gaps]
+
+    if strategy == STRATEGY_MANUAL:
+        plan = _plan_from_manual(grid, semester_label)
+    elif strategy == STRATEGY_CAP_18:
+        plan = _plan_with_cap(scheduled, gap_courses, semester_label)
+    elif strategy == STRATEGY_SWAP:
+        plan = _plan_with_swap(scheduled, gap_courses, semester_label)
+    elif strategy == STRATEGY_ADVISOR_PICKS:
+        if advisor_selected_courses:
+            plan = _plan_advisor_picks(
+                scheduled, gap_courses, advisor_selected_courses, semester_label
+            )
+        else:
+            # Return all options for the advisor to choose from
+            plan = _plan_show_all(scheduled, gap_courses, semester_label)
+    else:
+        plan = _plan_with_cap(scheduled, gap_courses, semester_label)
+
+    # Mark planned courses as orange on the grid (skip for manual — already set)
+    # Never overwrite in-progress courses
+    if strategy != STRATEGY_MANUAL:
+        for course in plan.courses + plan.makeup_courses:
+            if course.eval_status not in (CourseStatus.IN_PROGRESS, CourseStatus.FULLY_PLANNED):
+                course.status = GridHighlight.ORANGE
+
+    plan.compute_total()
+    return plan
+
+
+def _plan_with_cap(
+    scheduled: list,
+    gap_courses: list,
+    semester_label: str
+) -> SemesterPlan:
+    """
+    Strategy: Add missed courses + cap at 18 credits.
+    Prioritize gap courses, then fill with scheduled courses.
+    """
+    plan = SemesterPlan(semester_label=semester_label)
+    running_credits = 0
+
+    # First, add gap courses (prioritize catching up)
+    for course in gap_courses:
+        if running_credits + course.credits <= MAX_CREDITS_CAP:
+            plan.makeup_courses.append(course)
+            running_credits += course.credits
+
+    # Then add normally scheduled courses
+    for course in scheduled:
+        if running_credits + course.credits <= MAX_CREDITS_CAP:
+            plan.courses.append(course)
+            running_credits += course.credits
+
+    if len(gap_courses) > len(plan.makeup_courses):
+        remaining_gaps = len(gap_courses) - len(plan.makeup_courses)
+        plan.notes.append(
+            f"{remaining_gaps} additional gap course(s) could not fit within "
+            f"{MAX_CREDITS_CAP} credit limit and should be scheduled in a "
+            f"subsequent semester."
+        )
+
+    if len(scheduled) > len(plan.courses):
+        deferred = len(scheduled) - len(plan.courses)
+        plan.notes.append(
+            f"{deferred} scheduled course(s) were deferred to make room for "
+            f"makeup courses."
+        )
+
+    return plan
+
+
+def _plan_with_swap(
+    scheduled: list,
+    gap_courses: list,
+    semester_label: str
+) -> SemesterPlan:
+    """
+    Strategy: Push on-track courses back and add missed courses.
+    Replace scheduled courses with gap courses to maintain similar credit load.
+    """
+    plan = SemesterPlan(semester_label=semester_label)
+
+    # Calculate the target credit load from the scheduled semester
+    target_credits = sum(c.credits for c in scheduled)
+
+    # Start with gap courses
+    running_credits = 0
+    for course in gap_courses:
+        if running_credits + course.credits <= target_credits:
+            plan.makeup_courses.append(course)
+            running_credits += course.credits
+
+    # Fill remaining with scheduled courses
+    for course in scheduled:
+        if running_credits + course.credits <= target_credits:
+            plan.courses.append(course)
+            running_credits += course.credits
+
+    deferred_scheduled = len(scheduled) - len(plan.courses)
+    if deferred_scheduled > 0:
+        plan.notes.append(
+            f"{deferred_scheduled} on-track course(s) were pushed to the next "
+            f"semester to accommodate {len(plan.makeup_courses)} makeup course(s)."
+        )
+
+    return plan
+
+
+def _plan_advisor_picks(
+    scheduled: list,
+    gap_courses: list,
+    selected_codes: list,
+    semester_label: str
+) -> SemesterPlan:
+    """
+    Strategy: Advisor manually selected which courses to include.
+    """
+    plan = SemesterPlan(semester_label=semester_label)
+
+    selected_set = set(selected_codes)
+
+    for course in scheduled:
+        if course.code in selected_set:
+            plan.courses.append(course)
+
+    for course in gap_courses:
+        if course.code in selected_set:
+            plan.makeup_courses.append(course)
+
+    return plan
+
+
+def _plan_show_all(
+    scheduled: list,
+    gap_courses: list,
+    semester_label: str
+) -> SemesterPlan:
+    """
+    Return all available courses for the advisor to choose from.
+    """
+    plan = SemesterPlan(semester_label=semester_label)
+    plan.courses = list(scheduled)
+    plan.makeup_courses = list(gap_courses)
+    plan.notes.append(
+        "All available courses shown. Please select which courses "
+        "to include in the final plan."
+    )
+    return plan
+
+
+def _plan_from_manual(grid: ProgramGrid, semester_label: str) -> SemesterPlan:
+    """
+    Strategy: Generate a plan directly from the current grid state.
+
+    Collects all courses currently marked as ORANGE (next semester) as
+    scheduled courses, and all courses marked as LIGHT_RED (gap) as
+    makeup courses. This lets the advisor use Human Mode to set statuses
+    first, then generate a plan that reflects those manual edits.
+    """
+    plan = SemesterPlan(semester_label=semester_label)
+
+    for semester in grid.semesters:
+        for course in semester.courses:
+            if course.status == GridHighlight.ORANGE:
+                plan.courses.append(course)
+            elif course.status == GridHighlight.LIGHT_RED:
+                plan.makeup_courses.append(course)
+
+    if not plan.courses and not plan.makeup_courses:
+        plan.notes.append(
+            "No courses are marked as Next Semester (orange) or "
+            "Gap (red) on the grid. Use Human Mode to mark courses "
+            "before generating with this strategy."
+        )
+    else:
+        plan.notes.append(
+            "Plan generated from manual grid edits (Human Mode)."
+        )
+
+    return plan
+
+
+def get_strategy_options() -> list:
+    """Return the available planning strategy options for the GUI."""
+    return [
+        (STRATEGY_CAP_18, "Add missed courses + cap at 18 credits",
+         "Prioritize catching up on missed courses, but never exceed "
+         "18 credit hours. Push remaining courses to next semester."),
+        (STRATEGY_ADVISOR_PICKS, "Advisor picks courses manually",
+         "View all available courses (scheduled + missed) and "
+         "manually select which ones to include."),
+        (STRATEGY_SWAP, "Swap: replace on-track with missed courses",
+         "Push on-track scheduled courses back to accommodate missed "
+         "courses, maintaining a similar credit load."),
+        (STRATEGY_MANUAL, "Use manual edits (Human Mode)",
+         "Generate a plan based on the current grid state. Mark courses "
+         "with Human Mode first, then generate to reflect your edits."),
+    ]
+
+
+def get_available_semesters(current_year: int = None) -> list:
+    """
+    Get a list of upcoming semester labels for the dropdown.
+
+    Returns labels like ["Fall 2026", "Spring 2027", "Summer 2027", ...].
+    """
+    if current_year is None:
+        current_year = datetime.now().year
+
+    semesters = []
+    for year in range(current_year, current_year + 3):
+        semesters.append(f"Spring {year}")
+        semesters.append(f"Summer {year}")
+        semesters.append(f"Fall {year}")
+
+    return semesters

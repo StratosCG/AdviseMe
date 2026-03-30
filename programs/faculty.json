@@ -1,0 +1,15 @@
+{
+    "departments": {
+        "Graphic Design": {
+            "school": "Robert Busch School of Design",
+            "faculty": [
+                "Sahil Patel",
+                "Denise Anderson",
+                "Edward Johnston",
+                "Henry Stankiewicz",
+                "Martin Flores",
+                "Chris Navetta"
+            ]
+        }
+    }
+}
