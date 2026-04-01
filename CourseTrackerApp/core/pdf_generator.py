@@ -348,7 +348,8 @@ def generate_semester_plan_pdf(
     student_name: str,
     student_id: str,
     program_name: str,
-    output_path: str
+    output_path: str,
+    advisor_name: str = "",
 ):
     """
     Generate a clean one-page PDF for the next semester course plan.
@@ -469,18 +470,56 @@ def generate_semester_plan_pdf(
 
     # Signature lines
     elements.append(Spacer(1, 40))
+
+    today_str = datetime.now().strftime('%m/%d/%Y')
+
+    sig_label = ParagraphStyle(
+        'SigLabel', parent=styles['Normal'],
+        fontSize=9, alignment=TA_CENTER,
+    )
+
+    # Advisor signature: script name on the line using border-bottom
+    # instead of underscores, so the name sits right on it
+    advisor_sig_cell = ""
+    if advisor_name:
+        script_style = ParagraphStyle(
+            'ScriptSig', parent=styles['Normal'],
+            fontName='Times-Italic', fontSize=14, alignment=TA_CENTER,
+            textColor=colors.Color(0.15, 0.15, 0.4),
+            spaceBefore=0, spaceAfter=0,
+        )
+        advisor_sig_cell = Paragraph(advisor_name, script_style)
+
+    # Row 0: signature lines (underline via LINEBELOW style)
+    # Row 1: labels
+    # Row 2: spacer
+    # Row 3: date values (underline via LINEBELOW)
+    # Row 4: date labels
     sig_data = [
-        ["_" * 40, "", "_" * 40],
-        ["Student Signature", "", "Advisor Signature"],
+        ["", "", advisor_sig_cell if advisor_name else ""],
+        [Paragraph("Student Signature", sig_label), "",
+         Paragraph("Advisor Signature", sig_label)],
         ["", "", ""],
-        ["_" * 40, "", "_" * 40],
-        ["Date", "", "Date"],
+        [Paragraph(today_str, sig_label), "", Paragraph(today_str, sig_label)],
+        [Paragraph("Date", sig_label), "", Paragraph("Date", sig_label)],
     ]
     sig_table = Table(sig_data, colWidths=[2.5 * inch, 1.5 * inch, 2.5 * inch])
     sig_table.setStyle(TableStyle([
         ('FONTSIZE', (0, 0), (-1, -1), 9),
         ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+        ('VALIGN', (0, 0), (-1, -1), 'BOTTOM'),
         ('TOPPADDING', (0, 0), (-1, -1), 2),
+        ('BOTTOMPADDING', (0, 0), (-1, 0), 2),
+        # Space between sig line and label
+        ('TOPPADDING', (0, 1), (-1, 1), 4),
+        # Spacer row between signatures and dates
+        ('TOPPADDING', (0, 2), (-1, 2), 16),
+        # Signature lines — bottom border on row 0
+        ('LINEBELOW', (0, 0), (0, 0), 0.75, colors.black),
+        ('LINEBELOW', (2, 0), (2, 0), 0.75, colors.black),
+        # Date lines — bottom border on row 3
+        ('LINEBELOW', (0, 3), (0, 3), 0.75, colors.black),
+        ('LINEBELOW', (2, 3), (2, 3), 0.75, colors.black),
     ]))
     elements.append(sig_table)
 

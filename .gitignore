@@ -1,0 +1,7 @@
+*.pfx
+*.pem
+*.key
+.claude/
+__pycache__/
+*.pyc
+crash.log

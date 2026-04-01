@@ -1,3 +1,12 @@
 {
-  "private_view": true
+  "private_view": false,
+  "theme": "Ember",
+  "custom_theme": {
+    "card_bg": "#111B2E",
+    "sidebar_bg": "#0E1728",
+    "navy": "#15293F",
+    "navy_light": "#1E3A5F",
+    "border": "#1E2D42",
+    "accent": "#5BA3D9"
+  }
 }
