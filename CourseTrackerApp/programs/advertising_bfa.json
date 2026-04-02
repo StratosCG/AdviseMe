@@ -1,0 +1,412 @@
+{
+  "program_name": "BFA Advertising",
+  "program_code": "45403",
+  "school": "Robert Busch School of Design",
+  "university": "Kean University",
+  "catalog_year": "2021-Fall",
+  "total_credits": 120,
+  "semesters": [
+    {
+      "year": 1,
+      "term": "Fall",
+      "target_credits": 16,
+      "courses": [
+        {
+          "code": "GD 1000",
+          "name": "Computers in Graphic Design I",
+          "credits": 3,
+          "category": "major_required",
+          "match_codes": ["GD*1000", "GD 1000"]
+        },
+        {
+          "code": "DSN 1101",
+          "name": "Visual Form I",
+          "credits": 3,
+          "category": "foundation_core",
+          "match_codes": ["DSN*1101", "DSN 1101"]
+        },
+        {
+          "code": "DSN 1103",
+          "name": "Visualization Techniques I",
+          "credits": 3,
+          "category": "foundation_core",
+          "match_codes": ["DSN*1103", "DSN 1103"]
+        },
+        {
+          "code": "MATH",
+          "name": "MATH 1000, 1010, 1016, 1030 or 1054",
+          "credits": 3,
+          "category": "ge_foundation",
+          "match_codes": ["MATH*1000", "MATH*1010", "MATH*1016", "MATH*1030", "MATH*1054"],
+          "is_choice": true
+        },
+        {
+          "code": "ENG 1030",
+          "name": "College Composition",
+          "credits": 3,
+          "category": "ge_foundation",
+          "match_codes": ["ENG*1030", "ENG 1030"]
+        },
+        {
+          "code": "GE 1000",
+          "name": "Transition to Kean",
+          "credits": 1,
+          "category": "ge_foundation",
+          "match_codes": ["GE*1000", "GE*3000", "GE 1000", "GE 3000"],
+          "note": "GE*3000 fulfills GE*1000 for transfers with 30+ credits"
+        }
+      ]
+    },
+    {
+      "year": 1,
+      "term": "Spring",
+      "target_credits": 15,
+      "courses": [
+        {
+          "code": "GD 2015",
+          "name": "Composition: Type & Image",
+          "credits": 3,
+          "category": "major_required",
+          "match_codes": ["GD*2015", "GD 2015"]
+        },
+        {
+          "code": "DSN 1100",
+          "name": "Introduction to Design and Visual Culture",
+          "credits": 3,
+          "category": "foundation_core",
+          "match_codes": ["DSN*1100", "DSN 1100"]
+        },
+        {
+          "code": "GD 2010",
+          "name": "Typography I",
+          "credits": 3,
+          "category": "major_required",
+          "match_codes": ["GD*2010", "GD 2010"]
+        },
+        {
+          "code": "COMM 1402",
+          "name": "Speech Communication as Critical Citizenship",
+          "credits": 3,
+          "category": "ge_foundation",
+          "match_codes": ["COMM*1402", "COMM 1402"]
+        },
+        {
+          "code": "GE 2025",
+          "name": "Research & Technology",
+          "credits": 3,
+          "category": "ge_foundation",
+          "match_codes": ["GE*2025", "GE*2023", "GE 2025", "GE 2023"],
+          "note": "GE*2023 is transfer equivalent for GE*2025"
+        }
+      ]
+    },
+    {
+      "year": 2,
+      "term": "Fall",
+      "target_credits": 18,
+      "courses": [
+        {
+          "code": "GD 3020",
+          "name": "Graphic Design Fundamentals I",
+          "credits": 3,
+          "category": "major_required",
+          "match_codes": ["GD*3020", "GD 3020"]
+        },
+        {
+          "code": "GD 3321",
+          "name": "Motion Graphics Design I",
+          "credits": 3,
+          "category": "major_required",
+          "match_codes": ["GD*3321", "GD 3321"]
+        },
+        {
+          "code": "GD 3010",
+          "name": "Typography II",
+          "credits": 3,
+          "category": "major_required",
+          "match_codes": ["GD*3010", "GD 3010"]
+        },
+        {
+          "code": "GD 3220",
+          "name": "Advertising I",
+          "credits": 3,
+          "category": "major_required",
+          "match_codes": ["GD*3220", "GD 3220"]
+        },
+        {
+          "code": "AH 1700",
+          "name": "Art From Prehistory Through Middle Ages",
+          "credits": 3,
+          "category": "additional_required",
+          "match_codes": ["AH*1700", "AH 1700"]
+        },
+        {
+          "code": "HIST 1062",
+          "name": "Worlds of History: Traditions and Encounters",
+          "credits": 3,
+          "category": "ge_distribution",
+          "match_codes": ["HIST*1062", "HIST 1062"]
+        }
+      ]
+    },
+    {
+      "year": 2,
+      "term": "Spring",
+      "target_credits": 15,
+      "courses": [
+        {
+          "code": "GD 3021",
+          "name": "Graphic Design Fundamentals II",
+          "credits": 3,
+          "category": "major_required",
+          "match_codes": ["GD*3021", "GD 3021"]
+        },
+        {
+          "code": "GD 3320",
+          "name": "Web & Interactive Design I",
+          "credits": 3,
+          "category": "major_required",
+          "match_codes": ["GD*3320", "GD 3320"]
+        },
+        {
+          "code": "GD 3230",
+          "name": "Copywriting for Advertising",
+          "credits": 3,
+          "category": "major_required",
+          "match_codes": ["GD*3230", "GD 3230"]
+        },
+        {
+          "code": "SOCIAL_SCIENCE",
+          "name": "Social Science",
+          "credits": 3,
+          "category": "ge_distribution",
+          "match_codes": [],
+          "is_ge_category": true,
+          "ge_category": "social_science"
+        },
+        {
+          "code": "AH 1701",
+          "name": "History of Art from the Renaissance to the Modern World",
+          "credits": 3,
+          "category": "additional_required",
+          "match_codes": ["AH*1701", "AH 1701"]
+        }
+      ]
+    },
+    {
+      "year": 3,
+      "term": "Fall",
+      "target_credits": 15,
+      "courses": [
+        {
+          "code": "GD 4220",
+          "name": "Advertising II",
+          "credits": 3,
+          "category": "major_required",
+          "match_codes": ["GD*4220", "GD 4220"]
+        },
+        {
+          "code": "GD 4223",
+          "name": "Brand Strategies and Design",
+          "credits": 3,
+          "category": "major_required",
+          "match_codes": ["GD*4223", "GD 4223"]
+        },
+        {
+          "code": "MATH_CPS",
+          "name": "MATH or CPS",
+          "credits": 3,
+          "category": "ge_distribution",
+          "match_codes": [],
+          "is_ge_category": true,
+          "ge_category": "science_math",
+          "note": "Part of Science & Math requirement"
+        },
+        {
+          "code": "AH 3740",
+          "name": "Modern Art",
+          "credits": 3,
+          "category": "additional_required",
+          "match_codes": ["AH*3740", "AH 3740"]
+        },
+        {
+          "code": "ENG 2403",
+          "name": "World Literature",
+          "credits": 3,
+          "category": "ge_distribution",
+          "match_codes": ["ENG*2403", "ENG 2403"]
+        }
+      ]
+    },
+    {
+      "year": 3,
+      "term": "Spring",
+      "target_credits": 16,
+      "courses": [
+        {
+          "code": "GD 4222",
+          "name": "Design of Advertising",
+          "credits": 3,
+          "category": "major_required",
+          "match_codes": ["GD*4222", "GD 4222"]
+        },
+        {
+          "code": "GD 4120",
+          "name": "Promotional Design",
+          "credits": 3,
+          "category": "major_required",
+          "match_codes": ["GD*4120", "GD 4120"]
+        },
+        {
+          "code": "GD 3224",
+          "name": "User Interface Experience Design I",
+          "credits": 3,
+          "category": "major_required",
+          "match_codes": ["GD*3224", "GD 3224"]
+        },
+        {
+          "code": "GD 3030",
+          "name": "History of Visual Communications",
+          "credits": 3,
+          "category": "major_required",
+          "match_codes": ["GD*3030", "GD 3030"]
+        },
+        {
+          "code": "LAB_SCIENCE",
+          "name": "Lab Science",
+          "credits": 4,
+          "category": "ge_distribution",
+          "match_codes": [],
+          "is_ge_category": true,
+          "ge_category": "science_math",
+          "note": "GE Approved Laboratory Science course"
+        }
+      ]
+    },
+    {
+      "year": 4,
+      "term": "Fall",
+      "target_credits": 13,
+      "courses": [
+        {
+          "code": "GD 4221",
+          "name": "Advertising Design Omni-Channel Campaigns",
+          "credits": 3,
+          "category": "major_required",
+          "match_codes": ["GD*4221", "GD 4221"]
+        },
+        {
+          "code": "GD 3003/4090",
+          "name": "Internship/Practicum",
+          "credits": 3,
+          "category": "major_internship",
+          "match_codes": ["GD*3003", "GD*4090", "GD*3001", "GD*3002", "GD 3003", "GD 4090"],
+          "is_choice": true
+        },
+        {
+          "code": "GD 4321",
+          "name": "Motion Graphics Design II",
+          "credits": 3,
+          "category": "major_required",
+          "match_codes": ["GD*4321", "GD 4321"]
+        },
+        {
+          "code": "AD_ELECTIVE_1",
+          "name": "Major Elective Course 1 of 2",
+          "credits": 3,
+          "category": "major_elective",
+          "match_codes": [],
+          "is_elective_slot": true,
+          "elective_group": "ad_major_elective",
+          "slot_number": 1
+        },
+        {
+          "code": "FREE_ELECTIVE_1",
+          "name": "Free Elective",
+          "credits": 1,
+          "category": "free_elective",
+          "match_codes": [],
+          "is_elective_slot": true,
+          "elective_group": "free_elective",
+          "slot_number": 1,
+          "note": "SH with advisement"
+        }
+      ]
+    },
+    {
+      "year": 4,
+      "term": "Spring",
+      "target_credits": 12,
+      "courses": [
+        {
+          "code": "GD 4099",
+          "name": "Graphic Design Portfolio",
+          "credits": 3,
+          "category": "major_required",
+          "match_codes": ["GD*4099", "GD 4099"]
+        },
+        {
+          "code": "DSN 4000",
+          "name": "Critical Perspectives in Design",
+          "credits": 3,
+          "category": "major_capstone",
+          "match_codes": ["DSN*4000", "GD*4000", "DSN 4000", "GD 4000"],
+          "note": "Listed as DSN*4000 in some evaluations"
+        },
+        {
+          "code": "AD_ELECTIVE_2",
+          "name": "Major Elective Course 2 of 2",
+          "credits": 3,
+          "category": "major_elective",
+          "match_codes": [],
+          "is_elective_slot": true,
+          "elective_group": "ad_major_elective",
+          "slot_number": 2
+        },
+        {
+          "code": "FREE_ELECTIVE_2",
+          "name": "Free Elective",
+          "credits": 3,
+          "category": "free_elective",
+          "match_codes": [],
+          "is_elective_slot": true,
+          "elective_group": "free_elective",
+          "slot_number": 2,
+          "note": "SH with advisement"
+        }
+      ]
+    }
+  ],
+  "elective_definitions": {
+    "ad_major_elective": {
+      "name": "AD Major Elective",
+      "total_required": 2,
+      "credits_each": 3,
+      "total_credits": 6,
+      "description": "Major elective courses selected with advisement",
+      "match_prefixes": ["GD*", "AD*", "GDX*"],
+      "note": "Selected with advisement"
+    },
+    "free_elective": {
+      "name": "Free Elective",
+      "total_required": 2,
+      "total_credits": 4,
+      "description": "Free elective courses selected with advisement",
+      "match_prefixes": ["FEX*", "FA*"],
+      "note": "SH with advisement"
+    }
+  },
+  "ge_category_definitions": {
+    "social_science": {
+      "name": "Social Science",
+      "description": "GE-approved course in Psychology, Economics, World Geography, Political Science, Sociology, Anthropology, Interdisciplinary, Public Administration, or Global Studies",
+      "eval_section": "D. Soc Science Ele"
+    },
+    "science_math": {
+      "name": "Science & Math",
+      "description": "Math or Computer Science course and a GE Approved Laboratory Science course",
+      "eval_section": "E. Science & Math"
+    }
+  },
+  "department": "Advertising"
+}

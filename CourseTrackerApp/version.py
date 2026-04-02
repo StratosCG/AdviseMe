@@ -1,2 +1,2 @@
 # AdviseMe version — bump this before each GitHub release
-__version__ = "1.0.6"
+__version__ = "1.0.7"

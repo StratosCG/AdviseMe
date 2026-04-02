@@ -8,8 +8,6 @@ import os
 import sys
 import math
 import json
-import time
-import threading
 
 import flet as ft
 
@@ -296,7 +294,7 @@ def _plan_course_card(course, accent_color):
     return card
 
 
-def _show_toast(page, message, icon=None, color=GREEN, duration=2000):
+def _show_toast(page, message, icon=None, color=GREEN, duration=3000):
     """Show a floating toast notification."""
     row_controls = []
     if icon:
@@ -579,7 +577,7 @@ def main(page: ft.Page):
             eval_label.color = GREEN
             _update_student_info()
 
-            if grid[0]:
+            if record[0] and grid[0]:
                 name = program_dropdown.value
                 grid[0] = load_program_grid(program_paths[name])
                 grid[0] = match_courses(record[0], grid[0])
@@ -591,19 +589,26 @@ def main(page: ft.Page):
                 _update_stats()
 
             loading_bar.visible = False
-            _show_toast(page,
-                f"Loaded evaluation for {record[0].student_name} — "
-                f"{len(record[0].eval_courses)} courses parsed",
-                ft.Icons.CHECK_CIRCLE, GREEN)
-            status_text.value = f"Student: {record[0].student_name}"
+            if record[0]:
+                _show_toast(page,
+                    f"Loaded evaluation for {record[0].student_name} — "
+                    f"{len(record[0].eval_courses)} courses parsed",
+                    ft.Icons.CHECK_CIRCLE, GREEN)
+                status_text.value = f"Student: {record[0].student_name}"
+            else:
+                _show_toast(page, "Could not parse evaluation PDF.",
+                    ft.Icons.WARNING, ORANGE)
+                status_text.value = "Ready"
             page.update()
         except Exception as ex:
             import traceback; traceback.print_exc()
             loading_bar.visible = False
             try:
                 page.show_dialog(ft.AlertDialog(
-                    title=ft.Text("Error"),
-                    content=ft.Text(f"Failed to parse evaluation:\n{ex}"),
+                    title=ft.Text("Upload Error"),
+                    content=ft.Text(
+                        "Could not read this PDF. Please upload a program "
+                        "evaluation PDF from the Registrar (Banner/DegreeWorks)."),
                     bgcolor=BG, shape=ft.RoundedRectangleBorder(radius=16)))
             except Exception:
                 pass
@@ -668,7 +673,7 @@ def main(page: ft.Page):
                              border_radius=6,
                              border=ft.border.all(1, t["border"])),
                 ft.Text(txt, size=11, color=t.get("text_secondary", TEXT_SECONDARY)),
-            ], spacing=5)
+            ], spacing=8)
             for txt, clr in legend_items
         ], spacing=16, vertical_alignment=ft.CrossAxisAlignment.CENTER)
 
@@ -823,9 +828,13 @@ def main(page: ft.Page):
 
         # Copy button
         async def _copy_plan(e):
-            await clipboard.set(_build_plan_text())
-            _show_toast(page, "Plan copied to clipboard!",
-                        ft.Icons.CONTENT_COPY, GREEN)
+            try:
+                await clipboard.set(_build_plan_text())
+                _show_toast(page, "Plan copied to clipboard!",
+                            ft.Icons.CONTENT_COPY, GREEN)
+            except Exception:
+                _show_toast(page, "Could not copy to clipboard.",
+                            ft.Icons.ERROR_OUTLINE, ORANGE)
 
         copy_btn = ft.Button(
             "Copy to Clipboard", icon=ft.Icons.COPY,
@@ -990,7 +999,7 @@ def main(page: ft.Page):
         # Student card
         if private_view[0]:
             stu_items = [
-                ft.Text("Private View", size=16, weight=ft.FontWeight.BOLD,
+                ft.Text("Private Mode", size=16, weight=ft.FontWeight.BOLD,
                         color=TEXT_SECONDARY),
                 ft.Icon(ft.Icons.LOCK, size=40, color=GRAY_LIGHT),
                 ft.Text("Student identity is\nhidden in this mode.",
@@ -1307,14 +1316,31 @@ def main(page: ft.Page):
         )
         page.show_dialog(dlg)
 
-    # ── Private View ──
+    # ── Private Mode ──
     pv_btn_ref = [None]
     _apply_theme_ref = [None]   # set after containers are built
 
     def _toggle_private_view(e):
-        private_view[0] = not private_view[0]
-        _save_config({"private_view": private_view[0]})
+        # Turning OFF private view — no confirmation needed
         if private_view[0]:
+            private_view[0] = False
+            _save_config({"private_view": False})
+            _rebuild_sidebar()
+            _update_stats()
+            if _apply_theme_ref[0]:
+                _apply_theme_ref[0]()
+            _show_toast(page, "Private Mode OFF.",
+                        ft.Icons.LOCK_OPEN, BLUE_DARK)
+            status_text.value = "Ready"
+            page.update()
+            return
+
+        # Turning ON — ask for confirmation first
+        def _confirm_private(ev):
+            dlg.open = False
+            page.update()
+            private_view[0] = True
+            _save_config({"private_view": True})
             manual_mode[0] = True
             if record[0]:
                 record[0] = None
@@ -1332,20 +1358,34 @@ def main(page: ft.Page):
                 if grid[0]:
                     _display_grid()
                 _display_plan()
-
-        _rebuild_sidebar()
-        _update_stats()
-        # Apply theme colors
-        if _apply_theme_ref[0]:
-            _apply_theme_ref[0]()
-        if private_view[0]:
-            _show_toast(page, "Private View ON — Human Mode only, student identity hidden.",
+            _rebuild_sidebar()
+            _update_stats()
+            if _apply_theme_ref[0]:
+                _apply_theme_ref[0]()
+            _show_toast(page, "Private Mode ON — Human Mode only, student identity hidden.",
                         ft.Icons.LOCK, THEME_PRIVATE["accent"])
-        else:
-            _show_toast(page, "Private View OFF.",
-                        ft.Icons.LOCK_OPEN, BLUE_DARK)
-        status_text.value = "Private View" if private_view[0] else "Ready"
-        page.update()
+            status_text.value = "Private Mode"
+            page.update()
+
+        def _cancel_private(ev):
+            dlg.open = False
+            page.update()
+
+        dlg = ft.AlertDialog(
+            title=ft.Text("Enable Private Mode?", color=WHITE,
+                          weight=ft.FontWeight.BOLD),
+            content=ft.Text(
+                "This will hide student identity and clear uploaded data.",
+                color=TEXT_SECONDARY),
+            actions=[
+                ft.Button("Yes", on_click=_confirm_private,
+                          color=WHITE, bgcolor=GREEN),
+                ft.Button("No", on_click=_cancel_private,
+                          color=WHITE, bgcolor=GRAY_LIGHT),
+            ],
+            bgcolor=CARD_BG, shape=ft.RoundedRectangleBorder(radius=16),
+        )
+        page.show_dialog(dlg)
 
     # ── Human Mode toggle ──
     human_mode_switch = ft.Switch(
@@ -1391,7 +1431,7 @@ def main(page: ft.Page):
     def _on_manual_toggle(e):
         if not human_mode_switch.value and private_view[0]:
             human_mode_switch.value = True
-            _show_toast(page, "Human Mode cannot be disabled in Private View.",
+            _show_toast(page, "Human Mode cannot be disabled in Private Mode.",
                         ft.Icons.LOCK, ORANGE)
             page.update()
             return
@@ -1486,6 +1526,11 @@ def main(page: ft.Page):
         if not plan[0]:
             _show_toast(page, "No plan generated yet.", ft.Icons.WARNING, ORANGE)
             return
+        adv_val = advisor_dropdown.value
+        if not adv_val or adv_val in ("No advisors available",):
+            _show_toast(page, "Please select an advisor before exporting the plan.",
+                        ft.Icons.WARNING, ORANGE)
+            return
         student_name = record[0].student_name if record[0] else "Manual"
         student_id = record[0].student_id if record[0] else ""
         prog_name = grid[0].program_name if grid[0] else ""
@@ -1516,11 +1561,13 @@ def main(page: ft.Page):
     # Export buttons
     export_grid_btn = ft.Button("Export Grid PDF", icon=ft.Icons.PICTURE_AS_PDF,
                        bgcolor=NAVY, color=WHITE, width=280,
+                       tooltip="Export 4-year program grid with course status",
                        style=ft.ButtonStyle(
                            shape=ft.RoundedRectangleBorder(radius=8)),
                        on_click=_export_grid_pdf)
     export_plan_btn = ft.OutlinedButton("Export Plan PDF", icon=ft.Icons.DESCRIPTION,
                        width=280,
+                       tooltip="Export semester advising plan with advisor signature",
                        style=ft.ButtonStyle(
                            shape=ft.RoundedRectangleBorder(radius=8),
                            side=ft.BorderSide(1, BORDER),
@@ -1534,7 +1581,7 @@ def main(page: ft.Page):
 
     # ── Theme system ──
     _theme_names = list(BUILT_IN_THEMES.keys())
-    _saved_theme = _load_config().get("theme", "Midnight")
+    _saved_theme = _load_config().get("theme", "Ocean")
     if _saved_theme not in BUILT_IN_THEMES:
         _saved_theme = "Midnight"
     current_theme = [_saved_theme]
@@ -1616,12 +1663,22 @@ def main(page: ft.Page):
     # ──────────────────────────────────────────
     #  Header
     # ──────────────────────────────────────────
-    logo_path = _asset_path('logo_transparent.png')
+    logo_path = _asset_path('icon_128.png')
     logo_exists = os.path.exists(logo_path)
 
+    logo_widget = ft.Container(
+        content=ft.Image(src=logo_path, width=34, height=34,
+                         fit=ft.BoxFit.CONTAIN),
+        width=38, height=38,
+        border_radius=10,
+        bgcolor=WHITE,
+        padding=2,
+        shadow=ft.BoxShadow(spread_radius=0, blur_radius=6,
+                             color="rgba(0,0,0,0.25)", offset=ft.Offset(0, 2)),
+    ) if logo_exists else ft.Icon(ft.Icons.SCHOOL, size=36, color=BLUE_DARK)
+
     header_left = ft.Row([
-        ft.Image(src=logo_path, width=36, height=36) if logo_exists
-        else ft.Icon(ft.Icons.SCHOOL, size=36, color=BLUE_DARK),
+        logo_widget,
         ft.Column([
             ft.Text("RBSD | Internal Tool", size=10,
                     weight=ft.FontWeight.BOLD, color=BLUE_DARK),
@@ -1637,7 +1694,7 @@ def main(page: ft.Page):
 
     pv_btn = ft.Container(
         content=ft.Button(
-            "🔒  Private View",
+            "🔒  Private Mode",
             bgcolor=NAVY_LIGHT if private_view[0] else CARD_BG,
             color=WHITE if private_view[0] else TEXT_MUTED,
             style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=8)),
@@ -1719,7 +1776,7 @@ def main(page: ft.Page):
             theme_compact,
         ], spacing=8, vertical_alignment=ft.CrossAxisAlignment.CENTER),
         bgcolor=CARD_BG,
-        padding=ft.padding.symmetric(8, 16),
+        padding=ft.padding.symmetric(10, 16),
         border=ft.border.only(top=ft.BorderSide(1, BORDER)),
     )
 
@@ -1732,7 +1789,7 @@ def main(page: ft.Page):
                      padding=ft.padding.all(16)),
     ], spacing=0, expand=True)
 
-    # ── Theme switcher for Private View ──
+    # ── Theme switcher for Private Mode ──
     def _apply_theme():
         t = _get_theme_palette()
         tp = t["text_primary"]
@@ -1759,7 +1816,7 @@ def main(page: ft.Page):
         # Status bar
         status_bar.bgcolor = cbg
         status_bar.border = ft.border.only(top=ft.BorderSide(1, brd))
-        # Private View button
+        # Private Mode button
         btn = pv_btn_ref[0].content
         if private_view[0]:
             btn.bgcolor = t["navy_light"]
@@ -1790,7 +1847,7 @@ def main(page: ft.Page):
         # Status text & theme menu
         status_text.color = tm
         theme_label_text.color = tp
-        # Hide theme selector in Private View
+        # Hide theme selector in Private Mode
         theme_compact.visible = not private_view[0]
         # Export buttons
         export_grid_btn.bgcolor = t["navy"]
@@ -1855,6 +1912,12 @@ def main(page: ft.Page):
 def app(page: ft.Page):
     """Entry point — shows welcome screen, then transitions to main app."""
     page.title = "AdviseMe — RBSD | Internal Tool"
+    # Try .ico first (Windows), fall back to .png
+    _ico = _asset_path('AdviseMe.ico')
+    if os.path.exists(_ico):
+        page.window.icon = _ico
+    else:
+        page.window.icon = _asset_path('icon_128.png')
     page.bgcolor = BG
     page.window.width = 1440
     page.window.height = 804
@@ -1875,7 +1938,7 @@ def app(page: ft.Page):
             import traceback
             traceback.print_exc()
             _crash = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'crash.log')
-            with open(_crash, 'w') as _f:
+            with open(_crash, 'w', encoding='utf-8') as _f:
                 traceback.print_exc(file=_f)
             try:
                 page.add(ft.Text(f"Error: {ex}", color="red", size=16))
@@ -1884,30 +1947,40 @@ def app(page: ft.Page):
                 pass
 
     # Logo
-    logo_path = _asset_path('logo_transparent.png')
+    logo_path = _asset_path('icon_128.png')
     logo_exists = os.path.exists(logo_path)
 
     # Welcome background
     bg_path = _asset_path('welcome_bg.png')
     if os.path.exists(bg_path):
         welcome_bg = ft.Container(
-            content=ft.Image(src=bg_path, fit=ft.BoxFit.COVER, expand=True),
+            content=ft.Image(src=bg_path, fit=ft.BoxFit.COVER,
+                             width=2000, height=2000),
             expand=True,
+            clip_behavior=ft.ClipBehavior.HARD_EDGE,
         )
     else:
         welcome_bg = ft.Container(
             gradient=ft.LinearGradient(
                 begin=ft.Alignment(-1, -1),
                 end=ft.Alignment(1, 1),
-                colors=[NAVY_LIGHT, BLUE_DARK, NAVY],
+                colors=["#0A1628", "#122A4A", "#1A3A5C", "#0F2844"],
             ),
             expand=True,
         )
 
     # Animated elements
-    logo_widget = ft.Container(
-        content=(ft.Image(src=logo_path, width=72, height=72)
-                 if logo_exists else ft.Container()),
+    welcome_logo = ft.Container(
+        content=ft.Container(
+            content=ft.Image(src=logo_path, width=64, height=64,
+                             fit=ft.BoxFit.CONTAIN),
+            width=72, height=72,
+            border_radius=16,
+            bgcolor=WHITE,
+            padding=4,
+            shadow=ft.BoxShadow(spread_radius=0, blur_radius=12,
+                                 color="rgba(0,0,0,0.3)", offset=ft.Offset(0, 4)),
+        ) if logo_exists else ft.Container(),
         opacity=0,
         animate_opacity=ft.Animation(500, ft.AnimationCurve.EASE_OUT),
         scale=ft.Scale(0.8),
@@ -1970,7 +2043,7 @@ def app(page: ft.Page):
     left_panel = ft.Container(
         content=ft.Column([
             ft.Container(expand=True),
-            logo_widget,
+            welcome_logo,
             ft.Container(height=16),
             title_widget,
             ft.Container(height=8),
@@ -1990,11 +2063,12 @@ def app(page: ft.Page):
     page.update()
 
     # Staggered fade-in
-    def _animate():
-        elements = [logo_widget, title_widget, subtitle_widget,
+    async def _animate():
+        import asyncio
+        elements = [welcome_logo, title_widget, subtitle_widget,
                      btn_container, version_widget]
         for ctrl in elements:
-            time.sleep(0.15)
+            await asyncio.sleep(0.15)
             ctrl.opacity = 1
             if hasattr(ctrl, 'scale') and ctrl.scale is not None:
                 ctrl.scale = ft.Scale(1.0)
@@ -2002,7 +2076,7 @@ def app(page: ft.Page):
                 ctrl.offset = ft.Offset(0, 0)
             page.update()
 
-    threading.Thread(target=_animate, daemon=True).start()
+    page.run_task(_animate)
 
 
 if __name__ == "__main__":

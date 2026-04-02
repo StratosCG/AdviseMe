@@ -1,0 +1,411 @@
+{
+  "program_name": "BID Industrial Design",
+  "program_code": "45300",
+  "school": "Robert Busch School of Design",
+  "university": "Kean University",
+  "catalog_year": "2019-Fall",
+  "total_credits": 120,
+  "semesters": [
+    {
+      "year": 1,
+      "term": "Fall",
+      "target_credits": 16,
+      "courses": [
+        {
+          "code": "IND 1308",
+          "name": "Introduction to Industrial Design",
+          "credits": 3,
+          "category": "major_required",
+          "match_codes": ["IND*1308", "IND 1308"]
+        },
+        {
+          "code": "DSN 1101",
+          "name": "Visual Form I",
+          "credits": 3,
+          "category": "foundation_core",
+          "match_codes": ["DSN*1101", "DSN 1101"]
+        },
+        {
+          "code": "DSN 1103",
+          "name": "Visualization Techniques I",
+          "credits": 3,
+          "category": "foundation_core",
+          "match_codes": ["DSN*1103", "DSN 1103"]
+        },
+        {
+          "code": "MATH",
+          "name": "MATH 1000, 1010, 1016, 1030 or 1054",
+          "credits": 3,
+          "category": "ge_foundation",
+          "match_codes": ["MATH*1000", "MATH*1010", "MATH*1016", "MATH*1030", "MATH*1054"],
+          "is_choice": true
+        },
+        {
+          "code": "ENG 1030",
+          "name": "College Composition",
+          "credits": 3,
+          "category": "ge_foundation",
+          "match_codes": ["ENG*1030", "ENG 1030"]
+        },
+        {
+          "code": "GE 1000",
+          "name": "Transition to Kean",
+          "credits": 1,
+          "category": "ge_foundation",
+          "match_codes": ["GE*1000", "GE*3000", "GE 1000", "GE 3000"],
+          "note": "GE*3000 fulfills GE*1000 for transfers with 30+ credits"
+        }
+      ]
+    },
+    {
+      "year": 1,
+      "term": "Spring",
+      "target_credits": 18,
+      "courses": [
+        {
+          "code": "IND 2300",
+          "name": "Industrial Design Fundamentals",
+          "credits": 3,
+          "category": "major_required",
+          "match_codes": ["IND*2300", "IND 2300"]
+        },
+        {
+          "code": "DSN 1102",
+          "name": "Visual Form II",
+          "credits": 3,
+          "category": "foundation_core",
+          "match_codes": ["DSN*1102", "DSN 1102"]
+        },
+        {
+          "code": "DSN 1104",
+          "name": "Visualizing Techniques II",
+          "credits": 3,
+          "category": "foundation_core",
+          "match_codes": ["DSN*1104", "DSN 1104"]
+        },
+        {
+          "code": "DSN 1100",
+          "name": "Introduction to Design & Visual Culture",
+          "credits": 3,
+          "category": "foundation_core",
+          "match_codes": ["DSN*1100", "DSN 1100"]
+        },
+        {
+          "code": "AH 1700",
+          "name": "Art from Prehistory through Middle Ages",
+          "credits": 3,
+          "category": "additional_required",
+          "match_codes": ["AH*1700", "AH 1700"]
+        },
+        {
+          "code": "COMM 1402",
+          "name": "Speech Communication as Critical Citizenship",
+          "credits": 3,
+          "category": "ge_foundation",
+          "match_codes": ["COMM*1402", "COMM 1402"]
+        }
+      ]
+    },
+    {
+      "year": 2,
+      "term": "Fall",
+      "target_credits": 15,
+      "courses": [
+        {
+          "code": "GD 1000",
+          "name": "Computers in Graphic Design I",
+          "credits": 3,
+          "category": "major_required",
+          "match_codes": ["GD*1000", "GD 1000"]
+        },
+        {
+          "code": "IND 1300",
+          "name": "Drafting & CAD in Industrial Design",
+          "credits": 3,
+          "category": "major_required",
+          "match_codes": ["IND*1300", "IND 1300"]
+        },
+        {
+          "code": "IND 2301",
+          "name": "Model Design",
+          "credits": 3,
+          "category": "major_required",
+          "match_codes": ["IND*2301", "IND 2301"]
+        },
+        {
+          "code": "IND 2302",
+          "name": "Design Delineation",
+          "credits": 3,
+          "category": "major_required",
+          "match_codes": ["IND*2302", "IND 2302"]
+        },
+        {
+          "code": "AH 1701",
+          "name": "History of Art from the Renaissance to the Modern World",
+          "credits": 3,
+          "category": "additional_required",
+          "match_codes": ["AH*1701", "AH 1701"]
+        }
+      ]
+    },
+    {
+      "year": 2,
+      "term": "Spring",
+      "target_credits": 15,
+      "courses": [
+        {
+          "code": "IND 2350",
+          "name": "Production Methods I",
+          "credits": 3,
+          "category": "major_required",
+          "match_codes": ["IND*2350", "IND 2350"]
+        },
+        {
+          "code": "IND 2330",
+          "name": "CAD & 3D Modeling",
+          "credits": 3,
+          "category": "major_required",
+          "match_codes": ["IND*2330", "IND 2330"]
+        },
+        {
+          "code": "IND 2308",
+          "name": "Industrial Design Studio I",
+          "credits": 3,
+          "category": "major_required",
+          "match_codes": ["IND*2308", "IND 2308"]
+        },
+        {
+          "code": "HIST 1062",
+          "name": "Worlds of History: Traditions and Encounters",
+          "credits": 3,
+          "category": "ge_distribution",
+          "match_codes": ["HIST*1062", "HIST 1062"]
+        },
+        {
+          "code": "AH 3740",
+          "name": "Modern Art",
+          "credits": 3,
+          "category": "additional_required",
+          "match_codes": ["AH*3740", "AH 3740"]
+        }
+      ]
+    },
+    {
+      "year": 3,
+      "term": "Fall",
+      "target_credits": 15,
+      "courses": [
+        {
+          "code": "DSN 4006",
+          "name": "Special Topics in Design",
+          "credits": 3,
+          "category": "major_required",
+          "match_codes": ["DSN*4006", "DSN 4006"]
+        },
+        {
+          "code": "IND 3330",
+          "name": "Advanced CAD Systems",
+          "credits": 3,
+          "category": "major_required",
+          "match_codes": ["IND*3330", "IND 3330"]
+        },
+        {
+          "code": "IND 3308",
+          "name": "Industrial Design Studio II",
+          "credits": 3,
+          "category": "major_required",
+          "match_codes": ["IND*3308", "IND 3308"]
+        },
+        {
+          "code": "IND 1310",
+          "name": "History of Industrial Design",
+          "credits": 3,
+          "category": "major_required",
+          "match_codes": ["IND*1310", "IND 1310"]
+        },
+        {
+          "code": "GE 2025",
+          "name": "Research & Technology",
+          "credits": 3,
+          "category": "ge_foundation",
+          "match_codes": ["GE*2025", "GE*2023", "GE 2025", "GE 2023"],
+          "note": "GE*2023 is transfer equivalent for GE*2025"
+        }
+      ]
+    },
+    {
+      "year": 3,
+      "term": "Spring",
+      "target_credits": 15,
+      "courses": [
+        {
+          "code": "FA 2288",
+          "name": "Furnituremaking",
+          "credits": 3,
+          "category": "major_required",
+          "match_codes": ["FA*2288", "FA 2288"]
+        },
+        {
+          "code": "IND 4308",
+          "name": "Industrial Design Studio III",
+          "credits": 3,
+          "category": "major_required",
+          "match_codes": ["IND*4308", "IND 4308"]
+        },
+        {
+          "code": "FREE_ELECTIVE_1",
+          "name": "Free Elective",
+          "credits": 3,
+          "category": "free_elective",
+          "match_codes": [],
+          "is_elective_slot": true,
+          "elective_group": "free_elective",
+          "slot_number": 1
+        },
+        {
+          "code": "IND_ELECTIVE_1",
+          "name": "Major Elective 1 of 2",
+          "credits": 2,
+          "category": "major_elective",
+          "match_codes": [],
+          "is_elective_slot": true,
+          "elective_group": "ind_major_elective",
+          "slot_number": 1,
+          "credits_range": [1, 3]
+        },
+        {
+          "code": "SOCIAL_SCIENCE",
+          "name": "Social Science",
+          "credits": 3,
+          "category": "ge_distribution",
+          "match_codes": [],
+          "is_ge_category": true,
+          "ge_category": "social_science"
+        }
+      ]
+    },
+    {
+      "year": 4,
+      "term": "Fall",
+      "target_credits": 14,
+      "courses": [
+        {
+          "code": "FA 2277",
+          "name": "Sculpture Wksh Model-casting",
+          "credits": 3,
+          "category": "major_required",
+          "match_codes": ["FA*2277", "FA 2277"]
+        },
+        {
+          "code": "FREE_ELECTIVE_2",
+          "name": "Free Elective",
+          "credits": 3,
+          "category": "free_elective",
+          "match_codes": [],
+          "is_elective_slot": true,
+          "elective_group": "free_elective",
+          "slot_number": 2
+        },
+        {
+          "code": "IND_ELECTIVE_2",
+          "name": "Major Elective 2 of 2",
+          "credits": 2,
+          "category": "major_elective",
+          "match_codes": [],
+          "is_elective_slot": true,
+          "elective_group": "ind_major_elective",
+          "slot_number": 2,
+          "credits_range": [1, 3]
+        },
+        {
+          "code": "MATH_CPS",
+          "name": "MATH or CPS",
+          "credits": 3,
+          "category": "ge_distribution",
+          "match_codes": [],
+          "is_ge_category": true,
+          "ge_category": "science_math",
+          "note": "Part of Science & Math requirement"
+        },
+        {
+          "code": "LAB_SCIENCE",
+          "name": "Lab Science",
+          "credits": 4,
+          "category": "ge_distribution",
+          "match_codes": [],
+          "is_ge_category": true,
+          "ge_category": "science_math",
+          "note": "GE Approved Laboratory Science course"
+        }
+      ]
+    },
+    {
+      "year": 4,
+      "term": "Spring",
+      "target_credits": 12,
+      "courses": [
+        {
+          "code": "IND 3003",
+          "name": "Industrial Design Internship",
+          "credits": 3,
+          "category": "major_internship",
+          "match_codes": ["IND*3003", "IND 3003"]
+        },
+        {
+          "code": "IND 4310",
+          "name": "Portfolio: Industrial Design",
+          "credits": 3,
+          "category": "major_required",
+          "match_codes": ["IND*4310", "IND 4310"]
+        },
+        {
+          "code": "DSN 4000",
+          "name": "Critical Perspectives in Design",
+          "credits": 3,
+          "category": "major_capstone",
+          "match_codes": ["DSN*4000", "DSN 4000"],
+          "note": "Listed as DSN*4000 in some evaluations"
+        },
+        {
+          "code": "ENG 2403",
+          "name": "World Literature",
+          "credits": 3,
+          "category": "ge_distribution",
+          "match_codes": ["ENG*2403", "ENG 2403"]
+        }
+      ]
+    }
+  ],
+  "elective_definitions": {
+    "ind_major_elective": {
+      "name": "IND Major Elective",
+      "total_required": 2,
+      "credits_each": 3,
+      "total_credits": 6,
+      "description": "Major elective courses selected with advisement",
+      "match_prefixes": ["IND*", "DSN*", "FA*"],
+      "note": "1-3 credits each, selected with advisement"
+    },
+    "free_elective": {
+      "name": "Free Elective",
+      "total_required": 2,
+      "total_credits": 6,
+      "description": "Free elective courses selected with advisement",
+      "match_prefixes": ["FEX*", "FA*"],
+      "note": "Selected with advisement"
+    }
+  },
+  "ge_category_definitions": {
+    "social_science": {
+      "name": "Social Science",
+      "description": "GE-approved course in Psychology, Economics, World Geography, Political Science, Sociology, Anthropology, Interdisciplinary, Public Administration, or Global Studies",
+      "eval_section": "D. Soc Science Ele"
+    },
+    "science_math": {
+      "name": "Science & Math",
+      "description": "Math or Computer Science course and a GE Approved Laboratory Science course",
+      "eval_section": "E. Science & Math"
+    }
+  },
+  "department": "Industrial Design"
+}

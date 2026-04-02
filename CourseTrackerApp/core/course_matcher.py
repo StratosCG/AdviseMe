@@ -343,6 +343,9 @@ def detect_current_semester(grid: ProgramGrid, credits_earned: int = 0) -> int:
 
     Returns the index of the semester to plan for.
     """
+    if not grid.semesters:
+        return 0
+
     # Estimate year based on credits (roughly 30 per year)
     if credits_earned >= 90:
         estimated_year = 4

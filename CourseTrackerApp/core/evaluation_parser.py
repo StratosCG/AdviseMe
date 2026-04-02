@@ -159,7 +159,9 @@ def _parse_header(lines: list, record: StudentRecord):
     gpa_match = re.search(r'Cumulative GPA:\s*([\d.]+)', full_text)
     if gpa_match:
         try:
-            record.gpa = float(gpa_match.group(1))
+            gpa = float(gpa_match.group(1))
+            if 0.0 <= gpa <= 4.0:
+                record.gpa = gpa
         except ValueError:
             pass
 

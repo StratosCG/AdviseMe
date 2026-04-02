@@ -1,0 +1,402 @@
+{
+  "program_name": "BFA Interior Design",
+  "program_code": "45100",
+  "school": "Robert Busch School of Design",
+  "university": "Kean University",
+  "catalog_year": "2023-Fall",
+  "total_credits": 120,
+  "semesters": [
+    {
+      "year": 1,
+      "term": "Fall",
+      "target_credits": 16,
+      "courses": [
+        {
+          "code": "INTD 1102",
+          "name": "Interior Design Introductory Studio",
+          "credits": 3,
+          "category": "major_required",
+          "match_codes": ["INTD*1102", "INTD 1102"]
+        },
+        {
+          "code": "INTD 1103",
+          "name": "Interior Design Drafting Studio",
+          "credits": 3,
+          "category": "major_required",
+          "match_codes": ["INTD*1103", "INTD 1103"]
+        },
+        {
+          "code": "INTD 1105",
+          "name": "Interior Design Elements & Principles Studio",
+          "credits": 3,
+          "category": "major_required",
+          "match_codes": ["INTD*1105", "INTD 1105"]
+        },
+        {
+          "code": "MATH",
+          "name": "MATH 1000, 1010, 1016, 1030 or 1054",
+          "credits": 3,
+          "category": "ge_foundation",
+          "match_codes": ["MATH*1000", "MATH*1010", "MATH*1016", "MATH*1030", "MATH*1054"],
+          "is_choice": true
+        },
+        {
+          "code": "ENG 1030",
+          "name": "College Composition",
+          "credits": 3,
+          "category": "ge_foundation",
+          "match_codes": ["ENG*1030", "ENG 1030"]
+        },
+        {
+          "code": "GE 1000",
+          "name": "Transition to Kean",
+          "credits": 1,
+          "category": "ge_foundation",
+          "match_codes": ["GE*1000", "GE*3000", "GE 1000", "GE 3000"],
+          "note": "GE*3000 fulfills GE*1000 for transfers with 30+ credits"
+        }
+      ]
+    },
+    {
+      "year": 1,
+      "term": "Spring",
+      "target_credits": 15,
+      "courses": [
+        {
+          "code": "INTD 1106",
+          "name": "Building Fundamentals Studio",
+          "credits": 3,
+          "category": "major_required",
+          "match_codes": ["INTD*1106", "INTD 1106"]
+        },
+        {
+          "code": "INTD 2132",
+          "name": "Design & The Built Environment",
+          "credits": 3,
+          "category": "major_required",
+          "match_codes": ["INTD*2132", "INTD 2132"]
+        },
+        {
+          "code": "DSN 1100",
+          "name": "Introduction to Design & Visual Culture",
+          "credits": 3,
+          "category": "foundation_core",
+          "match_codes": ["DSN*1100", "DSN 1100"]
+        },
+        {
+          "code": "GE 2025",
+          "name": "Research & Technology",
+          "credits": 3,
+          "category": "ge_foundation",
+          "match_codes": ["GE*2025", "GE*2023", "GE 2025", "GE 2023"],
+          "note": "GE*2023 is transfer equivalent for GE*2025"
+        },
+        {
+          "code": "COMM 1402",
+          "name": "Speech Communication as Critical Citizenship",
+          "credits": 3,
+          "category": "ge_foundation",
+          "match_codes": ["COMM*1402", "COMM 1402"]
+        }
+      ]
+    },
+    {
+      "year": 2,
+      "term": "Fall",
+      "target_credits": 15,
+      "courses": [
+        {
+          "code": "INTD 2110",
+          "name": "Computer-Aided Design for Interiors 1",
+          "credits": 3,
+          "category": "major_required",
+          "match_codes": ["INTD*2110", "INTD 2110"]
+        },
+        {
+          "code": "INTD 2134",
+          "name": "Building Construction Studio",
+          "credits": 3,
+          "category": "major_required",
+          "match_codes": ["INTD*2134", "INTD 2134"]
+        },
+        {
+          "code": "INTD 2201",
+          "name": "Interior Design Survey 1",
+          "credits": 3,
+          "category": "major_required",
+          "match_codes": ["INTD*2201", "INTD 2201"]
+        },
+        {
+          "code": "HIST 1062",
+          "name": "Worlds of History: Traditions and Encounters",
+          "credits": 3,
+          "category": "ge_distribution",
+          "match_codes": ["HIST*1062", "HIST 1062"]
+        },
+        {
+          "code": "MATH",
+          "name": "MATH 1000, 1010, 1016, 1030, 1054 or SUST 1000 or ENV 1000",
+          "credits": 3,
+          "category": "ge_distribution",
+          "match_codes": ["MATH*1000", "MATH*1010", "MATH*1016", "MATH*1030", "MATH*1054", "SUST*1000", "ENV*1000"],
+          "is_choice": true,
+          "note": "Part of Science & Math requirement"
+        }
+      ]
+    },
+    {
+      "year": 2,
+      "term": "Spring",
+      "target_credits": 16,
+      "courses": [
+        {
+          "code": "INTD 2101",
+          "name": "Interior Design Studio I",
+          "credits": 3,
+          "category": "major_required",
+          "match_codes": ["INTD*2101", "INTD 2101"]
+        },
+        {
+          "code": "INTD 2111",
+          "name": "Digital Representation Studio 1, 2, 3",
+          "credits": 3,
+          "category": "major_required",
+          "match_codes": ["INTD*2111", "INTD*2115", "INTD*2113", "INTD 2111", "INTD 2115", "INTD 2113"],
+          "is_choice": true,
+          "note": "INTD 2111, 2115, or 2113"
+        },
+        {
+          "code": "INTD 2131",
+          "name": "Architectural Lighting Design",
+          "credits": 3,
+          "category": "major_required",
+          "match_codes": ["INTD*2131", "INTD 2131"]
+        },
+        {
+          "code": "INTD 2301",
+          "name": "Interior Design Survey 2",
+          "credits": 3,
+          "category": "major_required",
+          "match_codes": ["INTD*2301", "INTD 2301"]
+        },
+        {
+          "code": "INTD 2500",
+          "name": "Interior Design Internship Prep",
+          "credits": 1,
+          "category": "major_required",
+          "match_codes": ["INTD*2500", "INTD 2500"]
+        },
+        {
+          "code": "ENG 2403",
+          "name": "World Literature",
+          "credits": 3,
+          "category": "ge_distribution",
+          "match_codes": ["ENG*2403", "ENG 2403"]
+        }
+      ]
+    },
+    {
+      "year": 3,
+      "term": "Fall",
+      "target_credits": 15,
+      "courses": [
+        {
+          "code": "INTD 3110",
+          "name": "Interior Design Studio 2",
+          "credits": 3,
+          "category": "major_required",
+          "match_codes": ["INTD*3110", "INTD 3110"]
+        },
+        {
+          "code": "INTD 3134",
+          "name": "Materials and Finishes Studio",
+          "credits": 3,
+          "category": "major_required",
+          "match_codes": ["INTD*3134", "INTD 3134"]
+        },
+        {
+          "code": "INTD 3132",
+          "name": "Life Safety Codes for Interior Designer",
+          "credits": 3,
+          "category": "major_required",
+          "match_codes": ["INTD*3132", "INTD 3132"]
+        },
+        {
+          "code": "DSN 1200",
+          "name": "World Design I",
+          "credits": 3,
+          "category": "major_required",
+          "match_codes": ["DSN*1200", "DSN 1200"]
+        },
+        {
+          "code": "INTD_ELECTIVE_1",
+          "name": "Major Elective 1 of 2",
+          "credits": 3,
+          "category": "major_elective",
+          "match_codes": [],
+          "is_elective_slot": true,
+          "elective_group": "intd_major_elective",
+          "slot_number": 1
+        }
+      ]
+    },
+    {
+      "year": 3,
+      "term": "Spring",
+      "target_credits": 15,
+      "courses": [
+        {
+          "code": "INTD 3111",
+          "name": "Interior Design Studio 3",
+          "credits": 3,
+          "category": "major_required",
+          "match_codes": ["INTD*3111", "INTD 3111"]
+        },
+        {
+          "code": "INTD 3150",
+          "name": "Interior Design Research Methods",
+          "credits": 3,
+          "category": "major_required",
+          "match_codes": ["INTD*3150", "INTD 3150"]
+        },
+        {
+          "code": "DSN 1300",
+          "name": "World Design II",
+          "credits": 3,
+          "category": "major_required",
+          "match_codes": ["DSN*1300", "DSN 1300"]
+        },
+        {
+          "code": "INTD 3003",
+          "name": "Interior Design Internship",
+          "credits": 3,
+          "category": "major_internship",
+          "match_codes": ["INTD*3003", "INTD 3003"]
+        },
+        {
+          "code": "SOCIAL_SCIENCE",
+          "name": "Social Science",
+          "credits": 3,
+          "category": "ge_distribution",
+          "match_codes": [],
+          "is_ge_category": true,
+          "ge_category": "social_science"
+        }
+      ]
+    },
+    {
+      "year": 4,
+      "term": "Fall",
+      "target_credits": 16,
+      "courses": [
+        {
+          "code": "INTD 4112",
+          "name": "Studio IV",
+          "credits": 3,
+          "category": "major_required",
+          "match_codes": ["INTD*4112", "INTD 4112"]
+        },
+        {
+          "code": "INTD 4122",
+          "name": "Construction Documents of Designers",
+          "credits": 3,
+          "category": "major_required",
+          "match_codes": ["INTD*4122", "INTD 4122"]
+        },
+        {
+          "code": "FA 2288",
+          "name": "Furnituremaking I",
+          "credits": 3,
+          "category": "major_required",
+          "match_codes": ["FA*2288", "FA 2288"]
+        },
+        {
+          "code": "LAB_SCIENCE",
+          "name": "Lab Science",
+          "credits": 4,
+          "category": "ge_distribution",
+          "match_codes": [],
+          "is_ge_category": true,
+          "ge_category": "science_math",
+          "note": "ENV 2500 Biomimicry: Preferred Lab Science"
+        },
+        {
+          "code": "HUMANITIES",
+          "name": "Humanities",
+          "credits": 3,
+          "category": "ge_distribution",
+          "match_codes": [],
+          "is_ge_category": true,
+          "ge_category": "humanities"
+        }
+      ]
+    },
+    {
+      "year": 4,
+      "term": "Spring",
+      "target_credits": 12,
+      "courses": [
+        {
+          "code": "INTD 4113",
+          "name": "Interior Design Studio 5",
+          "credits": 3,
+          "category": "major_required",
+          "match_codes": ["INTD*4113", "INTD 4113"]
+        },
+        {
+          "code": "INTD 4140",
+          "name": "Interior Design Business Practices",
+          "credits": 3,
+          "category": "major_required",
+          "match_codes": ["INTD*4140", "INTD 4140"]
+        },
+        {
+          "code": "INTD_ELECTIVE_2",
+          "name": "Major Elective 2 of 2",
+          "credits": 3,
+          "category": "major_elective",
+          "match_codes": [],
+          "is_elective_slot": true,
+          "elective_group": "intd_major_elective",
+          "slot_number": 2
+        },
+        {
+          "code": "DSN 2200",
+          "name": "Sustainable Design II",
+          "credits": 3,
+          "category": "major_required",
+          "match_codes": ["DSN*2200", "DSN 2200"]
+        }
+      ]
+    }
+  ],
+  "elective_definitions": {
+    "intd_major_elective": {
+      "name": "INTD Major Elective",
+      "total_required": 2,
+      "credits_each": 3,
+      "total_credits": 6,
+      "description": "Major elective courses selected with advisement",
+      "match_prefixes": ["INTD*", "DSN*", "FA*"],
+      "note": "Selected with advisor approval"
+    }
+  },
+  "ge_category_definitions": {
+    "social_science": {
+      "name": "Social Science",
+      "description": "GE-approved course in Psychology, Economics, World Geography, Political Science, Sociology, Anthropology, Interdisciplinary, Public Administration, or Global Studies",
+      "eval_section": "D. Soc Science Ele"
+    },
+    "science_math": {
+      "name": "Science & Math",
+      "description": "Math or Computer Science course and a GE Approved Laboratory Science course",
+      "eval_section": "E. Science & Math"
+    },
+    "humanities": {
+      "name": "Humanities",
+      "description": "GE-approved Humanities course",
+      "eval_section": "C. Humanities Ele"
+    }
+  },
+  "department": "Interior Design"
+}
