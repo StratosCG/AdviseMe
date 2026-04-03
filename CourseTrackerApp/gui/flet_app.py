@@ -200,46 +200,56 @@ def _cell_accent(course) -> str:
     }.get(course.status, GRAY_LIGHT)
 
 
+# Mutable theme colors for module-level card helpers
+_card_theme = {
+    "bg": CARD_BG, "accent": BLUE_DARK, "border_tint": WHITE, "mode": "dark",
+    "text_primary": TEXT_PRIMARY, "text_secondary": TEXT_SECONDARY,
+    "text_muted": TEXT_MUTED, "navy_light": NAVY_LIGHT,
+}
+
+
 def _glass_card(content, padding=16, border_radius=12, expand=False,
                 width=None, height=None, elevation="medium"):
     """Create a glassmorphic card container with layered shadows."""
+    is_light = _card_theme["mode"] == "light"
+    card_bg = _card_theme["bg"]
+    accent = _card_theme["accent"]
+    tint = _card_theme["border_tint"]
+
+    shadow_opacity = 0.06 if is_light else 0.12
     shadow_presets = {
         "low": [
             ft.BoxShadow(spread_radius=0, blur_radius=4,
-                         color=ft.Colors.with_opacity(0.08, "#000000"),
+                         color=ft.Colors.with_opacity(shadow_opacity * 0.7, "#000000"),
                          offset=ft.Offset(0, 1)),
         ],
         "medium": [
             ft.BoxShadow(spread_radius=0, blur_radius=4,
-                         color=ft.Colors.with_opacity(0.10, "#000000"),
+                         color=ft.Colors.with_opacity(shadow_opacity, "#000000"),
                          offset=ft.Offset(0, 1)),
             ft.BoxShadow(spread_radius=0, blur_radius=12,
-                         color=ft.Colors.with_opacity(0.12, "#000000"),
+                         color=ft.Colors.with_opacity(shadow_opacity, "#000000"),
                          offset=ft.Offset(0, 4)),
-            ft.BoxShadow(spread_radius=-2, blur_radius=24,
-                         color=ft.Colors.with_opacity(0.06, BLUE_DARK),
-                         offset=ft.Offset(0, 8)),
         ],
         "high": [
             ft.BoxShadow(spread_radius=0, blur_radius=6,
-                         color=ft.Colors.with_opacity(0.12, "#000000"),
+                         color=ft.Colors.with_opacity(shadow_opacity, "#000000"),
                          offset=ft.Offset(0, 2)),
             ft.BoxShadow(spread_radius=0, blur_radius=20,
-                         color=ft.Colors.with_opacity(0.18, "#000000"),
+                         color=ft.Colors.with_opacity(shadow_opacity * 1.2, "#000000"),
                          offset=ft.Offset(0, 8)),
-            ft.BoxShadow(spread_radius=-4, blur_radius=32,
-                         color=ft.Colors.with_opacity(0.10, BLUE_DARK),
-                         offset=ft.Offset(0, 16)),
         ],
     }
     shadows = shadow_presets.get(elevation, shadow_presets["medium"])
+
+    gradient_opacity = 0.02 if is_light else 0.03
 
     return ft.Container(
         content=content,
         padding=padding,
         border_radius=border_radius,
-        bgcolor=CARD_BG,
-        border=ft.border.all(1, ft.Colors.with_opacity(0.08, WHITE)),
+        bgcolor=card_bg,
+        border=ft.border.all(1, ft.Colors.with_opacity(0.06 if is_light else 0.08, tint)),
         expand=expand,
         width=width,
         height=height,
@@ -248,8 +258,8 @@ def _glass_card(content, padding=16, border_radius=12, expand=False,
             begin=ft.Alignment(-1, -1),
             end=ft.Alignment(1, 1),
             colors=[
-                ft.Colors.with_opacity(0.03, BLUE_DARK),
-                ft.Colors.with_opacity(0.00, BLUE_DARK),
+                ft.Colors.with_opacity(gradient_opacity, accent),
+                ft.Colors.with_opacity(0.00, accent),
             ],
         ),
     )
@@ -259,8 +269,8 @@ def _plan_course_card(course, accent_color):
     """Create a single course card for the plan display."""
     card_content = ft.Row([
         ft.Text(course.code, size=14, weight=ft.FontWeight.BOLD,
-                color=TEXT_PRIMARY),
-        ft.Text(f"— {course.name}", size=13, color=TEXT_SECONDARY,
+                color=_card_theme["text_primary"]),
+        ft.Text(f"— {course.name}", size=13, color=_card_theme["text_secondary"],
                 expand=True, max_lines=1,
                 overflow=ft.TextOverflow.ELLIPSIS),
         ft.Container(
@@ -281,7 +291,7 @@ def _plan_course_card(course, accent_color):
             content=card_content,
             padding=ft.padding.symmetric(12, 16),
             border_radius=ft.border_radius.only(top_right=10, bottom_right=10),
-            bgcolor=CARD_BG,
+            bgcolor=_card_theme["bg"],
         ),
         bgcolor=accent_color,
         padding=ft.padding.only(left=4),
@@ -475,12 +485,7 @@ def main(page: ft.Page):
         "stats": stats_view,
     }
 
-    animated_switcher = ft.AnimatedSwitcher(
-        content=grid_view,
-        transition=ft.AnimatedSwitcherTransition.FADE,
-        duration=250,
-        expand=True,
-    )
+    tab_container = ft.Container(content=grid_view, expand=True)
 
     def _switch_tab(tab_id):
         current_tab[0] = tab_id
@@ -497,7 +502,7 @@ def main(page: ft.Page):
                 btn.content.controls[1].color = t["text_secondary"]
                 btn.content.controls[1].weight = None
             btn.data = tid
-        animated_switcher.content = tab_view_map[tab_id]
+        tab_container.content = tab_view_map[tab_id]
         page.update()
 
     # ──────────────────────────────────────────
@@ -519,6 +524,19 @@ def main(page: ft.Page):
         if name and name in program_paths:
             try:
                 grid[0] = load_program_grid(program_paths[name])
+                # Re-apply evaluation if one is loaded
+                if record[0]:
+                    grid[0] = match_courses(record[0], grid[0])
+                    current_semester_idx[0] = auto_detect_semester_index(
+                        grid[0], record[0].total_credits_earned)
+                    semester_dropdown.value = auto_detect_semester_label(
+                        record[0].total_credits_earned)
+                    _update_student_info()
+                    _update_stats()
+                # Clear stale plan from previous program
+                plan[0] = None
+                last_advisor_picks[0] = set()
+                _display_plan()
                 _show_toast(page, f"Loaded program: {name}",
                             ft.Icons.CHECK_CIRCLE, GREEN)
                 status_text.value = f"Program: {name}"
@@ -575,6 +593,27 @@ def main(page: ft.Page):
             filename = os.path.basename(filepath)
             eval_label.value = f"  {filename}"
             eval_label.color = GREEN
+
+            # Auto-select matching program from evaluation
+            if record[0] and record[0].program_name:
+                eval_prog = record[0].program_name.lower().strip()
+                matched_name = None
+                for pname in program_names:
+                    if pname.lower().strip() == eval_prog:
+                        matched_name = pname
+                        break
+                if not matched_name:
+                    # Fuzzy: check if eval program name is contained in dropdown name or vice versa
+                    for pname in program_names:
+                        plow = pname.lower()
+                        if eval_prog in plow or plow in eval_prog:
+                            matched_name = pname
+                            break
+                if matched_name and matched_name != program_dropdown.value:
+                    program_dropdown.value = matched_name
+                    grid[0] = load_program_grid(program_paths[matched_name])
+                    _update_advisor_dropdown()
+
             _update_student_info()
 
             if record[0] and grid[0]:
@@ -768,56 +807,72 @@ def main(page: ft.Page):
                              padding=ft.padding.only(left=12, right=12)))
 
     # ── Plan display ──
-    def _build_plan_text() -> str:
+    def _build_plan_email() -> str:
         if not plan[0]:
             return ""
-        lines = []
-        if not private_view[0]:
-            name = record[0].student_name if record[0] else ""
-            sid = record[0].student_id if record[0] else ""
-            if name:
-                lines.append(f"Student: {name}")
-                if sid:
-                    lines.append(f"ID: {sid}")
-                lines.append("")
-        lines.append(f"Advising Plan — {plan[0].semester_label}")
-        lines.append("─" * 48)
-        lines.append("")
-        if plan[0].courses:
-            lines.append("Scheduled Courses:")
-            for c in plan[0].courses:
-                lines.append(f"  • {c.code} — {c.name} ({c.credits} cr)")
-            sub = sum(c.credits for c in plan[0].courses)
-            lines.append(f"  Subtotal: {sub} credits")
-            lines.append("")
-        if plan[0].makeup_courses:
-            lines.append("Makeup Courses (Out of Sequence):")
-            for c in plan[0].makeup_courses:
-                lines.append(f"  • {c.code} — {c.name} ({c.credits} cr)")
-            sub = sum(c.credits for c in plan[0].makeup_courses)
-            lines.append(f"  Subtotal: {sub} credits")
-            lines.append("")
-        plan[0].compute_total()
-        lines.append("─" * 48)
-        lines.append(f"Total Credits: {plan[0].total_credits}")
-        lines.append("─" * 48)
-        if plan[0].notes:
-            lines.append("")
-            lines.append("Notes:")
-            for n in plan[0].notes:
-                lines.append(f"  - {n}")
-        return "\n".join(lines)
+        p = plan[0]
+        p.compute_total()
+        semester = p.semester_label or "Upcoming Semester"
+        student_name = (record[0].student_name if record[0] else "Student")
+        # Use first name for greeting
+        first_name = student_name.split()[0] if student_name else "Student"
+
+        # Combine all courses into one list
+        all_courses = list(p.courses or [])
+        all_courses.extend(p.makeup_courses or [])
+
+        course_lines = ""
+        for c in all_courses:
+            course_lines += f"{c.code} — {c.name} ({c.credits} cr)\n\n"
+
+        notes_section = ""
+        if p.notes:
+            notes_section = "\nAdditional Notes:\n"
+            for n in p.notes:
+                notes_section += f"- {n}\n"
+            notes_section += "\n"
+
+        email = (
+            f"Subject: Academic Advising Plan - {semester}\n\n"
+            f"Dear {first_name},\n\n"
+            f"I hope you're doing well.\n\n"
+            f"I have reviewed your academic progress and prepared your advising "
+            f"plan for the upcoming {semester} term. Based on your degree "
+            f"requirements, here is the schedule we have outlined for you:\n\n"
+            f"Planned Course Schedule\n"
+            f"{course_lines}"
+            f"Total Credits: {p.total_credits}\n\n"
+            f"Please review these selections in your student portal. If these "
+            f"courses align with your goals and graduation timeline, you can "
+            f"proceed with registration once your enrollment window opens.\n\n"
+            f"Important Reminders:\n\n"
+            f"Ensure you have met any necessary prerequisites for the courses "
+            f"listed above.\n\n"
+            f"If you are planning on an Internship/Practicum, please ensure all "
+            f"departmental paperwork is submitted by the deadline.\n\n"
+            f"If you wish to make any changes to this plan, please reach out to "
+            f"me so we can ensure you stay on track for graduation.\n\n"
+            f"Feel free to schedule a brief follow-up meeting if you have any "
+            f"specific questions about these electives or your long-term grid.\n"
+            f"{notes_section}"
+        )
+        return email
 
     def _display_plan():
         plan_content.controls.clear()
+        tp = _card_theme["text_primary"]
+        ts = _card_theme["text_secondary"]
+        tm = _card_theme["text_muted"]
+        acc = _card_theme["accent"]
+
         if not plan[0]:
             plan_content.controls.append(
                 _glass_card(ft.Column([
-                    ft.Icon(ft.Icons.CALENDAR_MONTH, size=48, color=GRAY_LIGHT),
+                    ft.Icon(ft.Icons.CALENDAR_MONTH, size=48, color=tm),
                     ft.Text("No plan generated yet.", size=16,
-                            color=TEXT_SECONDARY, weight=ft.FontWeight.W_500),
+                            color=ts, weight=ft.FontWeight.W_500),
                     ft.Text("Upload an evaluation and click 'Generate Plan'.",
-                            size=13, color=TEXT_MUTED),
+                            size=13, color=tm),
                 ], spacing=10,
                    horizontal_alignment=ft.CrossAxisAlignment.CENTER),
                    expand=True))
@@ -826,19 +881,19 @@ def main(page: ft.Page):
         p = plan[0]
         p.compute_total()
 
-        # Copy button
+        # Copy email button
         async def _copy_plan(e):
             try:
-                await clipboard.set(_build_plan_text())
-                _show_toast(page, "Plan copied to clipboard!",
-                            ft.Icons.CONTENT_COPY, GREEN)
+                await clipboard.set(_build_plan_email())
+                _show_toast(page, "Advising email copied to clipboard!",
+                            ft.Icons.EMAIL, GREEN)
             except Exception:
                 _show_toast(page, "Could not copy to clipboard.",
                             ft.Icons.ERROR_OUTLINE, ORANGE)
 
         copy_btn = ft.Button(
-            "Copy to Clipboard", icon=ft.Icons.COPY,
-            bgcolor=NAVY_LIGHT, color=WHITE,
+            "Copy Email", icon=ft.Icons.EMAIL,
+            bgcolor=_card_theme.get("navy_light", NAVY_LIGHT), color=WHITE,
             style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=8)),
             on_click=_copy_plan)
 
@@ -850,14 +905,14 @@ def main(page: ft.Page):
             _glass_card(ft.Row([
                 ft.Column([
                     ft.Text("Advising Plan", size=18,
-                            weight=ft.FontWeight.BOLD, color=TEXT_PRIMARY),
-                    ft.Text(p.semester_label, size=14, color=TEXT_SECONDARY),
+                            weight=ft.FontWeight.BOLD, color=tp),
+                    ft.Text(p.semester_label, size=14, color=ts),
                 ], spacing=4),
                 ft.Container(expand=True),
                 ft.Container(
                     content=ft.Text(f"{p.total_credits} cr", size=18,
-                                    weight=ft.FontWeight.BOLD, color=BLUE),
-                    bgcolor=ft.Colors.with_opacity(0.12, BLUE),
+                                    weight=ft.FontWeight.BOLD, color=acc),
+                    bgcolor=ft.Colors.with_opacity(0.12, acc),
                     border_radius=10, padding=ft.padding.symmetric(8, 16)),
             ], vertical_alignment=ft.CrossAxisAlignment.CENTER),
                 elevation="high"))
@@ -866,18 +921,18 @@ def main(page: ft.Page):
         if not private_view[0] and record[0]:
             plan_content.controls.append(
                 _glass_card(ft.Row([
-                    ft.Icon(ft.Icons.PERSON, size=18, color=BLUE),
+                    ft.Icon(ft.Icons.PERSON, size=18, color=acc),
                     ft.Text(record[0].student_name, size=14,
-                            weight=ft.FontWeight.W_500, color=TEXT_PRIMARY),
+                            weight=ft.FontWeight.W_500, color=tp),
                     ft.Text(f"·  {record[0].student_id}", size=12,
-                            color=TEXT_SECONDARY),
+                            color=ts),
                 ], spacing=10), padding=12, elevation="low"))
 
         # Scheduled courses
         if p.courses:
             plan_content.controls.append(
                 ft.Text("Scheduled Courses", size=15,
-                        weight=ft.FontWeight.W_600, color=TEXT_PRIMARY))
+                        weight=ft.FontWeight.W_600, color=tp))
             for c in p.courses:
                 plan_content.controls.append(_plan_course_card(c, ORANGE))
             sub = sum(c.credits for c in p.courses)
@@ -885,7 +940,7 @@ def main(page: ft.Page):
                 ft.Container(
                     content=ft.Text(f"Subtotal: {sub} credits", size=12,
                                     weight=ft.FontWeight.W_600,
-                                    color=TEXT_SECONDARY),
+                                    color=ts),
                     alignment=ft.Alignment(1, 0),
                     padding=ft.padding.only(right=8, bottom=8)))
 
@@ -895,7 +950,7 @@ def main(page: ft.Page):
                 ft.Row([
                     ft.Icon(ft.Icons.REPLAY, size=16, color=RED),
                     ft.Text("Makeup Courses (Out of Sequence)", size=15,
-                            weight=ft.FontWeight.W_600, color=TEXT_PRIMARY),
+                            weight=ft.FontWeight.W_600, color=tp),
                 ], spacing=8))
             for c in p.makeup_courses:
                 plan_content.controls.append(_plan_course_card(c, RED))
@@ -904,7 +959,7 @@ def main(page: ft.Page):
                 ft.Container(
                     content=ft.Text(f"Subtotal: {sub} credits", size=12,
                                     weight=ft.FontWeight.W_600,
-                                    color=TEXT_SECONDARY),
+                                    color=ts),
                     alignment=ft.Alignment(1, 0),
                     padding=ft.padding.only(right=8, bottom=8)))
 
@@ -913,7 +968,7 @@ def main(page: ft.Page):
             plan_content.controls.append(
                 _glass_card(ft.Row([
                     ft.Icon(ft.Icons.INFO_OUTLINE, size=18, color=ORANGE),
-                    ft.Column([ft.Text(n, size=13, color=TEXT_SECONDARY)
+                    ft.Column([ft.Text(n, size=13, color=ts)
                                for n in p.notes], spacing=4, expand=True),
                 ], spacing=12, vertical_alignment=ft.CrossAxisAlignment.START),
                     padding=14, elevation="low"))
@@ -923,6 +978,10 @@ def main(page: ft.Page):
         stats_content.controls.clear()
         if not grid[0]:
             return
+
+        tp = _card_theme["text_primary"]
+        ts = _card_theme["text_secondary"]
+        tm = _card_theme["text_muted"]
 
         stats = get_completion_stats(grid[0])
 
@@ -951,7 +1010,7 @@ def main(page: ft.Page):
                             ft.Text(val, size=36, weight=ft.FontWeight.BOLD,
                                     color=accent),
                         ], spacing=8, alignment=ft.MainAxisAlignment.CENTER),
-                        ft.Text(label, size=12, color=TEXT_SECONDARY),
+                        ft.Text(label, size=12, color=ts),
                     ], spacing=6,
                        horizontal_alignment=ft.CrossAxisAlignment.CENTER),
                     expand=True,
@@ -973,14 +1032,14 @@ def main(page: ft.Page):
             ft.Container(
                 width=ring_size, height=ring_size,
                 border_radius=ring_size // 2,
-                border=ft.border.all(14, BORDER),
+                border=ft.border.all(14, _card_theme["bg"]),
             ),
             ft.Container(
                 width=ring_size, height=ring_size,
                 content=ft.Column([
                     ft.Text(f"{pct:.0f}%", size=28,
-                            weight=ft.FontWeight.BOLD, color=TEXT_PRIMARY),
-                    ft.Text("complete", size=11, color=TEXT_MUTED),
+                            weight=ft.FontWeight.BOLD, color=tp),
+                    ft.Text("complete", size=11, color=tm),
                 ], horizontal_alignment=ft.CrossAxisAlignment.CENTER,
                    alignment=ft.MainAxisAlignment.CENTER, spacing=0),
             ),
@@ -988,11 +1047,11 @@ def main(page: ft.Page):
 
         ring_card = _glass_card(ft.Column([
             ft.Text("Completion", size=14, weight=ft.FontWeight.BOLD,
-                    color=TEXT_PRIMARY),
+                    color=tp),
             ft.Container(content=ring, alignment=ft.Alignment(0, 0),
                          padding=ft.padding.symmetric(12, 0)),
             ft.Text(f"{stats['completed']+stats['transfer']} of {stats['total']} courses",
-                    size=13, color=TEXT_SECONDARY),
+                    size=13, color=ts),
         ], spacing=8, horizontal_alignment=ft.CrossAxisAlignment.CENTER),
             width=220)
 
@@ -1000,12 +1059,12 @@ def main(page: ft.Page):
         if private_view[0]:
             stu_items = [
                 ft.Text("Private Mode", size=16, weight=ft.FontWeight.BOLD,
-                        color=TEXT_SECONDARY),
+                        color=ts),
                 ft.Icon(ft.Icons.LOCK, size=40, color=GRAY_LIGHT),
                 ft.Text("Student identity is\nhidden in this mode.",
-                        size=13, color=TEXT_MUTED),
+                        size=13, color=tm),
                 ft.Text(f"Program: {grid[0].program_name}",
-                        size=13, color=TEXT_SECONDARY),
+                        size=13, color=ts),
             ]
         else:
             name = (record[0].student_name if record[0] else "") or "—"
@@ -1021,26 +1080,26 @@ def main(page: ft.Page):
 
             stu_items = [
                 ft.Text("Student", size=16, weight=ft.FontWeight.BOLD,
-                        color=TEXT_PRIMARY),
+                        color=tp),
                 ft.Row([avatar, ft.Text(name, size=16,
-                        weight=ft.FontWeight.BOLD, color=TEXT_PRIMARY)],
+                        weight=ft.FontWeight.BOLD, color=tp)],
                        spacing=14),
-                ft.Row([ft.Text("Program", size=13, color=TEXT_MUTED, width=80),
+                ft.Row([ft.Text("Program", size=13, color=tm, width=80),
                         ft.Text(grid[0].program_name, size=13,
-                                weight=ft.FontWeight.BOLD, color=TEXT_PRIMARY)]),
-                ft.Row([ft.Text("GPA", size=13, color=TEXT_MUTED, width=80),
+                                weight=ft.FontWeight.BOLD, color=tp)]),
+                ft.Row([ft.Text("GPA", size=13, color=tm, width=80),
                         ft.Text(gpa_str, size=13, weight=ft.FontWeight.BOLD,
-                                color=TEXT_PRIMARY)]),
-                ft.Row([ft.Text("Credits", size=13, color=TEXT_MUTED, width=80),
+                                color=tp)]),
+                ft.Row([ft.Text("Credits", size=13, color=tm, width=80),
                         ft.Text(credits_str, size=13, weight=ft.FontWeight.BOLD,
-                                color=TEXT_PRIMARY)]),
+                                color=tp)]),
             ]
         stu_card = _glass_card(ft.Column(stu_items, spacing=10), expand=True)
 
         # Breakdown card
         total = stats['total'] or 1
         bar_items = [ft.Text("Breakdown", size=14, weight=ft.FontWeight.BOLD,
-                             color=TEXT_PRIMARY)]
+                             color=tp)]
         for lbl, cnt, clr in [
             ("Completed", stats['completed'], GREEN),
             ("Transfer", stats['transfer'], PURPLE),
@@ -1050,12 +1109,12 @@ def main(page: ft.Page):
         ]:
             pct_w = max(0.02, cnt / total)
             bar_items.append(ft.Column([
-                ft.Text(f"{lbl}  ({cnt})", size=12, color=TEXT_PRIMARY),
+                ft.Text(f"{lbl}  ({cnt})", size=12, color=tp),
                 ft.Container(
                     content=ft.Container(
                         bgcolor=clr, border_radius=4,
                         width=200 * pct_w, height=8),
-                    bgcolor=BORDER, border_radius=4, height=8, width=200),
+                    bgcolor=_card_theme["bg"], border_radius=4, height=8, width=200),
             ], spacing=2))
         breakdown_card = _glass_card(ft.Column(bar_items, spacing=6))
 
@@ -1657,7 +1716,7 @@ def main(page: ft.Page):
     # ──────────────────────────────────────────
     content_area = ft.Column([
         tab_bar,
-        animated_switcher,
+        tab_container,
     ], spacing=8, expand=True)
 
     # ──────────────────────────────────────────
@@ -1798,6 +1857,16 @@ def main(page: ft.Page):
         brd = t["border"]
         cbg = t["card_bg"]
         acc = t["accent"]
+
+        # Update module-level card theme for _glass_card / _plan_course_card
+        _card_theme["bg"] = cbg
+        _card_theme["accent"] = acc
+        _card_theme["border_tint"] = "#000000" if t.get("mode") == "light" else WHITE
+        _card_theme["mode"] = t.get("mode", "dark")
+        _card_theme["text_primary"] = tp
+        _card_theme["text_secondary"] = ts
+        _card_theme["text_muted"] = tm
+        _card_theme["navy_light"] = t["navy_light"]
 
         # Page
         page.bgcolor = t["bg"]
