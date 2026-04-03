@@ -174,15 +174,42 @@ def _parse_header(lines: list, record: StudentRecord):
         except ValueError:
             pass
 
-    # Program name from page header
-    if "Graphic Design, BFA" in full_text or "Graphic Design, BFA" in full_text:
-        record.program_name = "BFA Graphic Design"
-    else:
-        # Try to find it from the degree line
+    # Program name detection
+    # Map of PDF text patterns -> app program names
+    _PROGRAM_MAP = {
+        "Graphic Design, BFA": "BFA Graphic Design",
+        "Interior Design, BFA": "BFA Interior Design",
+        "Industrial Design, BID": "BID Industrial Design",
+        "Advertising, BFA": "BFA Advertising",
+    }
+
+    # Try exact match first
+    matched = False
+    for pdf_text, program_name in _PROGRAM_MAP.items():
+        if pdf_text in full_text:
+            record.program_name = program_name
+            matched = True
+            break
+
+    if not matched:
+        # Try parsing Degree + Major lines generically
         degree_match = re.search(r'Degree:\s*(.+)', full_text)
-        major_match = re.search(r'Majors:.*?([A-Za-z\s]+)', full_text, re.DOTALL)
+        major_match = re.search(r'Majors?:\s*([A-Za-z\s/]+)', full_text)
         if degree_match and major_match:
-            record.program_name = f"{major_match.group(1).strip()}"
+            degree = degree_match.group(1).strip()
+            major = major_match.group(1).strip()
+            # Extract degree abbreviation (e.g. "Bachelor of Fine Arts" -> "BFA")
+            abbrev_match = re.search(r'\(([A-Z]{2,4})\)', degree)
+            if abbrev_match:
+                abbrev = abbrev_match.group(1)
+            else:
+                # Build from initials: "Bachelor of Fine Arts" -> "BFA"
+                words = [w for w in degree.split() if w[0].isupper()]
+                abbrev = "".join(w[0] for w in words) if words else ""
+            if abbrev and major:
+                record.program_name = f"{abbrev} {major}"
+            elif major:
+                record.program_name = major
 
 
 def _parse_courses(lines: list) -> list:
@@ -236,8 +263,10 @@ def _parse_courses(lines: list) -> list:
             if not is_section_summary:
                 status_entries.append((i, st))
 
-        # Record course codes (skip if code appears inside a long description)
-        if len(line) < 30:
+        # Record course codes
+        # Skip lines that are clearly section headers or long descriptions
+        # but allow moderately long lines that contain a course code
+        if len(line) < 80 and not _detect_section(line):
             code_match = COURSE_CODE_RE.search(line)
             if code_match:
                 course_code = f"{code_match.group(1)}*{code_match.group(2)}"
