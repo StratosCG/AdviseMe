@@ -8,6 +8,7 @@ import os
 import sys
 import math
 import json
+import urllib.request
 
 import flet as ft
 
@@ -35,6 +36,29 @@ from core.semester_planner import (
 )
 from core.pdf_generator import generate_grid_pdf, generate_semester_plan_pdf
 from version import __version__
+
+GITHUB_REPO = "StratosCG/AdviseMe"
+
+
+def _check_for_update() -> tuple:
+    """Check GitHub for a newer release. Returns (latest_version, url) or (None, None)."""
+    try:
+        url = f"https://api.github.com/repos/{GITHUB_REPO}/releases/latest"
+        req = urllib.request.Request(url, headers={"Accept": "application/vnd.github+json"})
+        with urllib.request.urlopen(req, timeout=5) as resp:
+            data = json.loads(resp.read().decode())
+        latest = data.get("tag_name", "").lstrip("v")
+        html_url = data.get("html_url", "")
+        if latest and latest != __version__:
+            # Simple version comparison: split by dots
+            current_parts = [int(x) for x in __version__.split(".")]
+            latest_parts = [int(x) for x in latest.split(".")]
+            if latest_parts > current_parts:
+                return latest, html_url
+    except Exception:
+        pass
+    return None, None
+
 
 # ── Brand Colors ──
 NAVY          = "#15293F"
@@ -2109,6 +2133,18 @@ def app(page: ft.Page):
         animate_opacity=ft.Animation(500, ft.AnimationCurve.EASE_OUT),
     )
 
+    update_banner = ft.Container(
+        content=ft.Row([
+            ft.Icon(ft.Icons.SYSTEM_UPDATE, size=14, color=BLUE_DARK),
+            ft.Text("", size=12, color=BLUE_DARK, weight=ft.FontWeight.W_500),
+        ], spacing=6, alignment=ft.MainAxisAlignment.CENTER),
+        opacity=0,
+        animate_opacity=ft.Animation(500, ft.AnimationCurve.EASE_OUT),
+        padding=ft.padding.symmetric(6, 12),
+        border_radius=8,
+        bgcolor=ft.Colors.with_opacity(0.1, BLUE_DARK),
+    )
+
     left_panel = ft.Container(
         content=ft.Column([
             ft.Container(expand=True),
@@ -2120,6 +2156,7 @@ def app(page: ft.Page):
             ft.Container(height=30),
             btn_container,
             ft.Container(expand=True),
+            update_banner,
             version_widget,
         ], horizontal_alignment=ft.CrossAxisAlignment.CENTER, spacing=4),
         width=600,
@@ -2143,6 +2180,17 @@ def app(page: ft.Page):
                 ctrl.scale = ft.Scale(1.0)
             if hasattr(ctrl, 'offset') and ctrl.offset is not None:
                 ctrl.offset = ft.Offset(0, 0)
+            page.update()
+
+        # Check for updates in background
+        import concurrent.futures
+        loop = asyncio.get_event_loop()
+        with concurrent.futures.ThreadPoolExecutor() as pool:
+            latest, url = await loop.run_in_executor(pool, _check_for_update)
+        if latest:
+            update_banner.content.controls[1].value = (
+                f"Update available: v{latest} — download from GitHub Releases")
+            update_banner.opacity = 1
             page.update()
 
     page.run_task(_animate)
