@@ -64,10 +64,9 @@ def _check_for_update() -> tuple:
     return None, None
 
 
-def _self_update(exe_url: str, page: ft.Page) -> None:
+def _self_update(exe_url: str, page: ft.Page, on_progress=None) -> None:
     """Download the new .exe, create a launcher script to swap it, and restart."""
     import subprocess
-    import tempfile
 
     current_exe = sys.executable
     exe_dir = os.path.dirname(current_exe)
@@ -76,7 +75,7 @@ def _self_update(exe_url: str, page: ft.Page) -> None:
 
     # Download with progress
     req = urllib.request.Request(exe_url, headers={"User-Agent": "AdviseMe-updater/1.0"})
-    with urllib.request.urlopen(req, timeout=120) as resp:
+    with urllib.request.urlopen(req, timeout=300) as resp:
         total = int(resp.headers.get("Content-Length", 0))
         downloaded = 0
         with open(new_exe, "wb") as f:
@@ -86,6 +85,8 @@ def _self_update(exe_url: str, page: ft.Page) -> None:
                     break
                 f.write(chunk)
                 downloaded += len(chunk)
+                if on_progress and total:
+                    on_progress(downloaded, total)
 
     # Write a batch script that waits for this process to exit, swaps exes, and relaunches
     bat_path = os.path.join(exe_dir, "_update.bat")
@@ -2243,24 +2244,46 @@ def app(page: ft.Page):
 
     _update_exe_url = [None]
 
+    _progress_bar = ft.ProgressBar(value=0, width=200, bar_height=6,
+                                     color=BLUE_DARK, bgcolor=ft.Colors.with_opacity(0.15, BLUE_DARK))
+    _progress_text = ft.Text("0%", size=12, color=BLUE_DARK, weight=ft.FontWeight.W_500)
+
     def _do_update(e):
         if not _update_exe_url[0]:
             return
-        # Show downloading state
-        update_banner.content = ft.Row([
-            ft.ProgressRing(width=16, height=16, stroke_width=2, color=BLUE_DARK),
-            ft.Text("Downloading update...", size=12, color=BLUE_DARK,
-                    weight=ft.FontWeight.W_500),
-        ], spacing=8, alignment=ft.MainAxisAlignment.CENTER)
+        import threading
+
+        # Show progress bar
+        update_banner.content = ft.Column([
+            ft.Row([
+                ft.Text("Downloading update...", size=12, color=BLUE_DARK,
+                        weight=ft.FontWeight.W_500),
+                _progress_text,
+            ], spacing=8, alignment=ft.MainAxisAlignment.CENTER),
+            _progress_bar,
+        ], spacing=6, horizontal_alignment=ft.CrossAxisAlignment.CENTER)
+        update_banner.on_click = None  # disable clicking during download
         page.update()
-        try:
-            _self_update(_update_exe_url[0], page)
-        except Exception as ex:
-            update_banner.content = ft.Row([
-                ft.Icon(ft.Icons.ERROR_OUTLINE, size=14, color="#C53030"),
-                ft.Text(f"Update failed: {ex}", size=11, color="#C53030"),
-            ], spacing=6, alignment=ft.MainAxisAlignment.CENTER)
+
+        def _on_progress(downloaded, total):
+            pct = downloaded / total
+            mb_done = downloaded / (1024 * 1024)
+            mb_total = total / (1024 * 1024)
+            _progress_bar.value = pct
+            _progress_text.value = f"{mb_done:.0f}/{mb_total:.0f} MB ({pct:.0%})"
             page.update()
+
+        def _run():
+            try:
+                _self_update(_update_exe_url[0], page, on_progress=_on_progress)
+            except Exception as ex:
+                update_banner.content = ft.Row([
+                    ft.Icon(ft.Icons.ERROR_OUTLINE, size=14, color="#C53030"),
+                    ft.Text(f"Update failed: {ex}", size=11, color="#C53030"),
+                ], spacing=6, alignment=ft.MainAxisAlignment.CENTER)
+                page.update()
+
+        threading.Thread(target=_run, daemon=True).start()
 
     update_banner = ft.Container(
         content=ft.Row([
