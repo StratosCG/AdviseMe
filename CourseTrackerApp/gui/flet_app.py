@@ -211,7 +211,7 @@ BUILT_IN_THEMES = {
 def _asset_path(filename: str) -> str:
     base = getattr(sys, '_MEIPASS', None)
     if base:
-        return os.path.join(base, 'assets', filename)
+        return os.path.join(base, 'CourseTrackerApp', 'assets', filename)
     return os.path.join(
         os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
         'assets', filename)
