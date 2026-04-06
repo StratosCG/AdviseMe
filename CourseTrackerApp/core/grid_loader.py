@@ -4,6 +4,7 @@ Handles loading pre-built configs and (future) auto-detection from PDFs.
 """
 import json
 import os
+import sys
 from typing import Optional
 
 from core.models import ProgramGrid, Semester, GridCourse
@@ -97,7 +98,9 @@ def list_available_programs(programs_dir: str) -> list:
 
 def get_programs_dir() -> str:
     """Get the default programs directory path."""
-    # Look relative to this file's location
+    base = getattr(sys, '_MEIPASS', None)
+    if base:
+        return os.path.join(base, 'CourseTrackerApp', 'programs')
     base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     return os.path.join(base_dir, "programs")
 

@@ -236,6 +236,7 @@ def _asset_data_uri(filename: str) -> str | None:
 
 
 def _config_path() -> str:
+    """Writable config location (next to exe when frozen, else source dir)."""
     if getattr(sys, 'frozen', False):
         return os.path.join(os.path.dirname(sys.executable), 'config.json')
     return os.path.join(
@@ -243,12 +244,29 @@ def _config_path() -> str:
         'config.json')
 
 
+def _bundled_config_path() -> str | None:
+    """Bundled default config inside _MEIPASS (read-only)."""
+    base = getattr(sys, '_MEIPASS', None)
+    if base:
+        return os.path.join(base, 'CourseTrackerApp', 'config.json')
+    return None
+
+
 def _load_config() -> dict:
     try:
         with open(_config_path(), 'r') as f:
             return json.load(f)
     except Exception:
-        return {}
+        pass
+    # Fall back to bundled config on first exe run
+    bp = _bundled_config_path()
+    if bp:
+        try:
+            with open(bp, 'r') as f:
+                return json.load(f)
+        except Exception:
+            pass
+    return {}
 
 
 def _save_config(data: dict):
