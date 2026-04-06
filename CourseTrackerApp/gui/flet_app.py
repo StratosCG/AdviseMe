@@ -208,13 +208,18 @@ BUILT_IN_THEMES = {
 }
 
 
-def _asset_path(filename: str) -> str:
+def _assets_dir() -> str:
+    """Return the absolute path to the assets directory."""
     base = getattr(sys, '_MEIPASS', None)
     if base:
-        return os.path.join(base, 'CourseTrackerApp', 'assets', filename)
+        return os.path.join(base, 'CourseTrackerApp', 'assets')
     return os.path.join(
         os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
-        'assets', filename)
+        'assets')
+
+
+def _asset_path(filename: str) -> str:
+    return os.path.join(_assets_dir(), filename)
 
 
 def _config_path() -> str:
@@ -1804,7 +1809,7 @@ def main(page: ft.Page):
     logo_exists = os.path.exists(logo_path)
 
     logo_widget = ft.Container(
-        content=ft.Image(src=logo_path, width=34, height=34,
+        content=ft.Image(src="icon_128.png", width=34, height=34,
                          fit=ft.BoxFit.CONTAIN),
         width=38, height=38,
         border_radius=10,
@@ -2101,7 +2106,7 @@ def app(page: ft.Page):
     bg_path = _asset_path('welcome_bg.png')
     if os.path.exists(bg_path):
         welcome_bg = ft.Container(
-            content=ft.Image(src=bg_path, fit=ft.BoxFit.COVER,
+            content=ft.Image(src="welcome_bg.png", fit=ft.BoxFit.COVER,
                              width=2000, height=2000),
             expand=True,
             clip_behavior=ft.ClipBehavior.HARD_EDGE,
@@ -2119,7 +2124,7 @@ def app(page: ft.Page):
     # Animated elements
     welcome_logo = ft.Container(
         content=ft.Container(
-            content=ft.Image(src=logo_path, width=64, height=64,
+            content=ft.Image(src="icon_128.png", width=64, height=64,
                              fit=ft.BoxFit.CONTAIN),
             width=72, height=72,
             border_radius=16,
@@ -2285,4 +2290,4 @@ def app(page: ft.Page):
 
 
 if __name__ == "__main__":
-    ft.app(target=app)
+    ft.app(target=app, assets_dir=_assets_dir())

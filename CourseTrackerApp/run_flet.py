@@ -23,4 +23,5 @@ import flet as ft
 from gui.flet_app import app
 
 if __name__ == "__main__":
-    ft.run(main=app)
+    from gui.flet_app import _assets_dir
+    ft.run(main=app, assets_dir=_assets_dir())
