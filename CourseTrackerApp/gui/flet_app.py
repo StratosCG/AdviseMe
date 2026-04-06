@@ -1272,7 +1272,11 @@ def main(page: ft.Page):
             import traceback; traceback.print_exc()
 
     def _show_advisor_pick_dialog(semester_idx, semester_label, human_picks=None):
-        pre_checked = (human_picks or set()) | last_advisor_picks[0]
+        if manual_mode[0]:
+            # Human mode: only respect the user's explicit grid picks
+            pre_checked = human_picks or set()
+        else:
+            pre_checked = (human_picks or set()) | last_advisor_picks[0]
         check_vars = {}
         key_map = {}
 
