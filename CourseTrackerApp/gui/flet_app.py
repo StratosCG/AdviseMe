@@ -1316,6 +1316,8 @@ def main(page: ft.Page):
                         color=TEXT_PRIMARY),
             ], spacing=8)
 
+        # In human mode, only pre-check courses the user explicitly picked
+        auto_check = not manual_mode[0]
         items = []
 
         scheduled = get_next_semester_courses(grid[0], semester_idx)
@@ -1324,7 +1326,7 @@ def main(page: ft.Page):
             for c in scheduled:
                 add_checkbox(items,
                     f"{c.code} — {c.name} ({c.credits} cr)",
-                    f"s_{c.code}", c.code, c.credits, True, NAVY_LIGHT)
+                    f"s_{c.code}", c.code, c.credits, auto_check, NAVY_LIGHT)
 
         gaps = find_gap_courses(grid[0], semester_idx)
         if gaps:
@@ -1332,7 +1334,7 @@ def main(page: ft.Page):
             for sl, c in gaps:
                 add_checkbox(items,
                     f"{c.code} — {c.name} ({c.credits} cr) [{sl}]",
-                    f"g_{c.code}_{sl}", c.code, c.credits, True, RED)
+                    f"g_{c.code}_{sl}", c.code, c.credits, auto_check, RED)
 
         shown = {c.code for c in scheduled} | {c.code for _, c in gaps}
         other = [(sl, c) for sl, c in get_all_remaining_grid_courses(grid[0])
@@ -1666,15 +1668,32 @@ def main(page: ft.Page):
     ], spacing=6, visible=manual_mode[0])
 
     # ── Export handlers ──
+    def _semester_shorthand(label: str) -> str:
+        """Convert 'Fall 2026' → 'FA26', 'Spring 2026' → 'SP26', etc."""
+        parts = label.strip().split()
+        if len(parts) >= 2:
+            season = parts[0].upper()
+            year = parts[-1][-2:]  # last 2 digits
+            prefix = {"FALL": "FA", "SPRING": "SP", "SUMMER": "SU",
+                       "WINTER": "WI"}.get(season, season[:2])
+            return f"{prefix}{year}"
+        return label.replace(" ", "")
+
     async def _export_grid_pdf(e):
         if not grid[0]:
             _show_toast(page, "No program grid loaded.", ft.Icons.WARNING, ORANGE)
             return
         student_name = record[0].student_name if record[0] else "Manual"
         student_id = record[0].student_id if record[0] else ""
+        major = (program_dropdown.value or "").replace(" ", "_")
+        sem_label = semester_dropdown.value or ""
+        sem_short = _semester_shorthand(sem_label) if sem_label else ""
+        name_part = student_name.replace(" ", "_")
+        parts = [p for p in [name_part, major, sem_short, "Grid"] if p]
+        default_name = "_".join(parts) + ".pdf"
         filepath = await file_picker.save_file(
             dialog_title="Save Highlighted Grid PDF",
-            file_name=f"grid_{student_name.replace(' ', '_')}.pdf",
+            file_name=default_name,
             allowed_extensions=["pdf"])
         if not filepath:
             return
