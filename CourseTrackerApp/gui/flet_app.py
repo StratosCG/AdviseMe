@@ -222,6 +222,19 @@ def _asset_path(filename: str) -> str:
     return os.path.join(_assets_dir(), filename)
 
 
+def _asset_data_uri(filename: str) -> str | None:
+    """Return a data URI for a small asset image, or None if missing."""
+    import base64
+    path = _asset_path(filename)
+    if not os.path.exists(path):
+        return None
+    ext = filename.rsplit('.', 1)[-1].lower()
+    mime = {"png": "image/png", "jpg": "image/jpeg", "ico": "image/x-icon"}.get(ext, "image/png")
+    with open(path, "rb") as f:
+        b64 = base64.b64encode(f.read()).decode("ascii")
+    return f"data:{mime};base64,{b64}"
+
+
 def _config_path() -> str:
     if getattr(sys, 'frozen', False):
         return os.path.join(os.path.dirname(sys.executable), 'config.json')
@@ -1805,11 +1818,9 @@ def main(page: ft.Page):
     # ──────────────────────────────────────────
     #  Header
     # ──────────────────────────────────────────
-    logo_path = _asset_path('icon_128.png')
-    logo_exists = os.path.exists(logo_path)
-
+    _hdr_logo_b64 = _asset_data_uri('icon_128.png')
     logo_widget = ft.Container(
-        content=ft.Image(src="icon_128.png", width=34, height=34,
+        content=ft.Image(src=_hdr_logo_b64, width=34, height=34,
                          fit=ft.BoxFit.CONTAIN),
         width=38, height=38,
         border_radius=10,
@@ -1817,7 +1828,7 @@ def main(page: ft.Page):
         padding=2,
         shadow=ft.BoxShadow(spread_radius=0, blur_radius=6,
                              color="rgba(0,0,0,0.25)", offset=ft.Offset(0, 2)),
-    ) if logo_exists else ft.Icon(ft.Icons.SCHOOL, size=36, color=BLUE_DARK)
+    ) if _hdr_logo_b64 else ft.Icon(ft.Icons.SCHOOL, size=36, color=BLUE_DARK)
 
     header_left = ft.Row([
         logo_widget,
@@ -2098,13 +2109,9 @@ def app(page: ft.Page):
             except Exception:
                 pass
 
-    # Logo
-    logo_path = _asset_path('icon_128.png')
-    logo_exists = os.path.exists(logo_path)
-
     # Welcome background
-    bg_path = _asset_path('welcome_bg.png')
-    if os.path.exists(bg_path):
+    _bg_exists = os.path.exists(_asset_path('welcome_bg.png'))
+    if _bg_exists:
         welcome_bg = ft.Container(
             content=ft.Image(src="welcome_bg.png", fit=ft.BoxFit.COVER,
                              width=2000, height=2000),
@@ -2122,17 +2129,18 @@ def app(page: ft.Page):
         )
 
     # Animated elements
+    _logo_b64 = _asset_data_uri('icon_128.png')
     welcome_logo = ft.Container(
         content=ft.Container(
-            content=ft.Image(src="icon_128.png", width=64, height=64,
-                             fit=ft.BoxFit.CONTAIN),
+            content=ft.Image(src=_logo_b64, width=64, height=64,
+                             fit=ft.BoxFit.CONTAIN) if _logo_b64 else ft.Container(),
             width=72, height=72,
             border_radius=16,
             bgcolor=WHITE,
             padding=4,
             shadow=ft.BoxShadow(spread_radius=0, blur_radius=12,
                                  color="rgba(0,0,0,0.3)", offset=ft.Offset(0, 4)),
-        ) if logo_exists else ft.Container(),
+        ) if _logo_b64 else ft.Container(),
         opacity=0,
         animate_opacity=ft.Animation(500, ft.AnimationCurve.EASE_OUT),
         scale=ft.Scale(0.8),
@@ -2290,4 +2298,4 @@ def app(page: ft.Page):
 
 
 if __name__ == "__main__":
-    ft.app(target=app, assets_dir=_assets_dir())
+    ft.app(target=app)
