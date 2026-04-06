@@ -41,23 +41,70 @@ GITHUB_REPO = "StratosCG/AdviseMe"
 
 
 def _check_for_update() -> tuple:
-    """Check GitHub for a newer release. Returns (latest_version, url) or (None, None)."""
+    """Check GitHub for a newer release. Returns (latest_version, exe_download_url) or (None, None)."""
     try:
         url = f"https://api.github.com/repos/{GITHUB_REPO}/releases/latest"
         req = urllib.request.Request(url, headers={"Accept": "application/vnd.github+json"})
         with urllib.request.urlopen(req, timeout=5) as resp:
             data = json.loads(resp.read().decode())
         latest = data.get("tag_name", "").lstrip("v")
-        html_url = data.get("html_url", "")
         if latest and latest != __version__:
-            # Simple version comparison: split by dots
             current_parts = [int(x) for x in __version__.split(".")]
             latest_parts = [int(x) for x in latest.split(".")]
             if latest_parts > current_parts:
-                return latest, html_url
+                # Find the .exe asset download URL
+                exe_url = None
+                for asset in data.get("assets", []):
+                    if asset.get("name", "").lower().endswith(".exe"):
+                        exe_url = asset["browser_download_url"]
+                        break
+                return latest, exe_url
     except Exception:
         pass
     return None, None
+
+
+def _self_update(exe_url: str, page: ft.Page) -> None:
+    """Download the new .exe, create a launcher script to swap it, and restart."""
+    import subprocess
+    import tempfile
+
+    current_exe = sys.executable
+    exe_dir = os.path.dirname(current_exe)
+    exe_name = os.path.basename(current_exe)
+    new_exe = os.path.join(exe_dir, exe_name + ".new")
+
+    # Download with progress
+    req = urllib.request.Request(exe_url, headers={"User-Agent": "AdviseMe-updater/1.0"})
+    with urllib.request.urlopen(req, timeout=120) as resp:
+        total = int(resp.headers.get("Content-Length", 0))
+        downloaded = 0
+        with open(new_exe, "wb") as f:
+            while True:
+                chunk = resp.read(65536)
+                if not chunk:
+                    break
+                f.write(chunk)
+                downloaded += len(chunk)
+
+    # Write a batch script that waits for this process to exit, swaps exes, and relaunches
+    bat_path = os.path.join(exe_dir, "_update.bat")
+    with open(bat_path, "w") as bf:
+        bf.write(f'@echo off\n')
+        bf.write(f'echo Updating AdviseMe, please wait...\n')
+        bf.write(f'timeout /t 2 /nobreak >nul\n')
+        bf.write(f'del /f "{current_exe}"\n')
+        bf.write(f'move /y "{new_exe}" "{current_exe}"\n')
+        bf.write(f'start "" "{current_exe}"\n')
+        bf.write(f'del /f "%~f0"\n')
+
+    # Launch the updater script detached and exit
+    subprocess.Popen(
+        ["cmd", "/c", bat_path],
+        creationflags=subprocess.DETACHED_PROCESS | subprocess.CREATE_NO_WINDOW,
+        close_fds=True,
+    )
+    page.window.destroy()
 
 
 # ── Brand Colors ──
@@ -2140,6 +2187,27 @@ def app(page: ft.Page):
         animate_opacity=ft.Animation(500, ft.AnimationCurve.EASE_OUT),
     )
 
+    _update_exe_url = [None]
+
+    def _do_update(e):
+        if not _update_exe_url[0]:
+            return
+        # Show downloading state
+        update_banner.content = ft.Row([
+            ft.ProgressRing(width=16, height=16, stroke_width=2, color=BLUE_DARK),
+            ft.Text("Downloading update...", size=12, color=BLUE_DARK,
+                    weight=ft.FontWeight.W_500),
+        ], spacing=8, alignment=ft.MainAxisAlignment.CENTER)
+        page.update()
+        try:
+            _self_update(_update_exe_url[0], page)
+        except Exception as ex:
+            update_banner.content = ft.Row([
+                ft.Icon(ft.Icons.ERROR_OUTLINE, size=14, color="#C53030"),
+                ft.Text(f"Update failed: {ex}", size=11, color="#C53030"),
+            ], spacing=6, alignment=ft.MainAxisAlignment.CENTER)
+            page.update()
+
     update_banner = ft.Container(
         content=ft.Row([
             ft.Icon(ft.Icons.SYSTEM_UPDATE, size=14, color=BLUE_DARK),
@@ -2150,6 +2218,8 @@ def app(page: ft.Page):
         padding=ft.padding.symmetric(6, 12),
         border_radius=8,
         bgcolor=ft.Colors.with_opacity(0.1, BLUE_DARK),
+        on_click=_do_update,
+        ink=True,
     )
 
     left_panel = ft.Container(
@@ -2193,10 +2263,21 @@ def app(page: ft.Page):
         import concurrent.futures
         loop = asyncio.get_event_loop()
         with concurrent.futures.ThreadPoolExecutor() as pool:
-            latest, url = await loop.run_in_executor(pool, _check_for_update)
+            latest, exe_url = await loop.run_in_executor(pool, _check_for_update)
         if latest:
-            update_banner.content.controls[1].value = (
-                f"Update available: v{latest} — download from GitHub Releases")
+            _update_exe_url[0] = exe_url
+            if exe_url:
+                update_banner.content = ft.Row([
+                    ft.Icon(ft.Icons.SYSTEM_UPDATE, size=14, color=BLUE_DARK),
+                    ft.Text(f"v{latest} available — click to update",
+                            size=12, color=BLUE_DARK, weight=ft.FontWeight.W_500),
+                ], spacing=6, alignment=ft.MainAxisAlignment.CENTER)
+            else:
+                update_banner.content = ft.Row([
+                    ft.Icon(ft.Icons.SYSTEM_UPDATE, size=14, color=BLUE_DARK),
+                    ft.Text(f"v{latest} available — no exe found in release",
+                            size=12, color=BLUE_DARK, weight=ft.FontWeight.W_500),
+                ], spacing=6, alignment=ft.MainAxisAlignment.CENTER)
             update_banner.opacity = 1
             page.update()
 
