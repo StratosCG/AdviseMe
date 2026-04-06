@@ -1353,8 +1353,15 @@ def main(page: ft.Page):
         eval_label.color = TEXT_MUTED
         advisor_dropdown.value = None
         semester_dropdown.value = None
+        loading_bar.visible = False
+        # Reset manual/human mode (keep ON in Private View)
         if not private_view[0]:
             manual_mode[0] = False
+            human_mode_switch.value = False
+        # Reset color picker to default
+        manual_color[0] = "green"
+        color_radio.value = "green"
+        _rebuild_sidebar()
         _update_student_info()
         if grid[0]:
             _display_grid()
